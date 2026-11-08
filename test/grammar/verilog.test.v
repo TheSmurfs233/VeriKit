@@ -1,7 +1,7 @@
 // SYNTAX TEST "source.verilog" "Verilog 着色基础"
 
     // module foo is disabled
-//  ^^ comment.line.double-slash.verilog
+//  ^^^^^^^^^^^^^^^^^^^^^^^^^ comment.line.double-slash.verilog
 
     module counter #(
 //  ^^^^^^ keyword.other.module.verilog
@@ -23,7 +23,7 @@
 
     $display("hi");
 //  ^^^^^^^^ support.function.system.verilog
-//           ^^^^ string.quoted.double.verilog
+//           ^ string.quoted.double.verilog
 
     `timescale 1ns / 1ps
 //  ^^^^^^^^^^ keyword.control.preprocessor.verilog
@@ -38,7 +38,7 @@
 //  ^^^^^^ keyword.control.verilog
 //           ^^^^^^^ keyword.other.edge.verilog
 //                       ^^ keyword.other.edge.verilog
-//                                          ^^^^^ keyword.other.block.l1.verilog
+//                                         ^^^^^ keyword.other.block.l1.verilog
 
     end
 //  ^^^ keyword.other.block.l1.verilog
@@ -69,3 +69,17 @@
 
     end
 //  ^^^ keyword.other.block.l1.verilog
+
+// —— 例化：模块名深蓝 / 实例名青 / .端口名浅棕（列号由 dump.js 实测）——
+
+    counter #(
+//  ^^^^^^^ entity.name.type.instance.verilog
+        .WIDTH (8)
+//       ^^^^^ variable.other.port.verilog
+    ) u_counter_a (
+//    ^^^^^^^^^^^ entity.name.instance.verilog
+        .clk   (clk),
+//       ^^^ variable.other.port.verilog
+        .ovf   (ovf)
+//       ^^^ variable.other.port.verilog
+    );

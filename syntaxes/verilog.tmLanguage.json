@@ -4,95 +4,220 @@
   "scopeName": "source.verilog",
   "comment": "手写 Verilog-2001 子集。三条原则：① 注释/字符串最先匹配，否则 // module foo 里的 module 会被着色；② 语义不同的事物给不同 scope，否则主题只能涂一种颜色；③ begin/end 用 6 层定深嵌套链（block-1..block-6）实现逐层变色，第 6 层自递归承接更深的嵌套。",
   "patterns": [
-    { "include": "#block-1" },
-    { "include": "#statement" }
+    {
+      "include": "#block-1"
+    },
+    {
+      "include": "#statement"
+    }
   ],
   "repository": {
     "statement": {
       "comment": "块内外的公共规则。begin/end 不在这里 —— 它们由 block-N 链处理。",
       "patterns": [
-        { "include": "#comment" },
-        { "include": "#string" },
-        { "include": "#directive" },
-        { "include": "#module" },
-        { "include": "#task-function" },
-        { "include": "#edge" },
-        { "include": "#control" },
-        { "include": "#port-direction" },
-        { "include": "#storage" },
-        { "include": "#modifier" },
-        { "include": "#number" },
-        { "include": "#system-task" },
-        { "include": "#assignment" },
-        { "include": "#operator" },
-        { "include": "#punctuation" }
+        {
+          "include": "#comment"
+        },
+        {
+          "include": "#string"
+        },
+        {
+          "include": "#directive"
+        },
+        {
+          "include": "#module"
+        },
+        {
+          "include": "#task-function"
+        },
+        {
+          "include": "#edge"
+        },
+        {
+          "include": "#control"
+        },
+        {
+          "include": "#port-direction"
+        },
+        {
+          "include": "#storage"
+        },
+        {
+          "include": "#modifier"
+        },
+        {
+          "include": "#number"
+        },
+        {
+          "include": "#system-task"
+        },
+        {
+          "include": "#instance-param"
+        },
+        {
+          "include": "#instance-inline"
+        },
+        {
+          "include": "#instance-name"
+        },
+        {
+          "include": "#port-connection"
+        },
+        {
+          "include": "#assignment"
+        },
+        {
+          "include": "#operator"
+        },
+        {
+          "include": "#punctuation"
+        }
       ]
     },
     "block-1": {
       "begin": "\\bbegin\\b",
       "end": "\\bend\\b",
-      "beginCaptures": { "0": { "name": "keyword.other.block.l1.verilog" } },
-      "endCaptures": { "0": { "name": "keyword.other.block.l1.verilog" } },
+      "beginCaptures": {
+        "0": {
+          "name": "keyword.other.block.l1.verilog"
+        }
+      },
+      "endCaptures": {
+        "0": {
+          "name": "keyword.other.block.l1.verilog"
+        }
+      },
       "patterns": [
-        { "include": "#statement" },
-        { "include": "#block-2" }
+        {
+          "include": "#statement"
+        },
+        {
+          "include": "#block-2"
+        }
       ]
     },
     "block-2": {
       "begin": "\\bbegin\\b",
       "end": "\\bend\\b",
-      "beginCaptures": { "0": { "name": "keyword.other.block.l2.verilog" } },
-      "endCaptures": { "0": { "name": "keyword.other.block.l2.verilog" } },
+      "beginCaptures": {
+        "0": {
+          "name": "keyword.other.block.l2.verilog"
+        }
+      },
+      "endCaptures": {
+        "0": {
+          "name": "keyword.other.block.l2.verilog"
+        }
+      },
       "patterns": [
-        { "include": "#statement" },
-        { "include": "#block-3" }
+        {
+          "include": "#statement"
+        },
+        {
+          "include": "#block-3"
+        }
       ]
     },
     "block-3": {
       "begin": "\\bbegin\\b",
       "end": "\\bend\\b",
-      "beginCaptures": { "0": { "name": "keyword.other.block.l3.verilog" } },
-      "endCaptures": { "0": { "name": "keyword.other.block.l3.verilog" } },
+      "beginCaptures": {
+        "0": {
+          "name": "keyword.other.block.l3.verilog"
+        }
+      },
+      "endCaptures": {
+        "0": {
+          "name": "keyword.other.block.l3.verilog"
+        }
+      },
       "patterns": [
-        { "include": "#statement" },
-        { "include": "#block-4" }
+        {
+          "include": "#statement"
+        },
+        {
+          "include": "#block-4"
+        }
       ]
     },
     "block-4": {
       "begin": "\\bbegin\\b",
       "end": "\\bend\\b",
-      "beginCaptures": { "0": { "name": "keyword.other.block.l4.verilog" } },
-      "endCaptures": { "0": { "name": "keyword.other.block.l4.verilog" } },
+      "beginCaptures": {
+        "0": {
+          "name": "keyword.other.block.l4.verilog"
+        }
+      },
+      "endCaptures": {
+        "0": {
+          "name": "keyword.other.block.l4.verilog"
+        }
+      },
       "patterns": [
-        { "include": "#statement" },
-        { "include": "#block-5" }
+        {
+          "include": "#statement"
+        },
+        {
+          "include": "#block-5"
+        }
       ]
     },
     "block-5": {
       "begin": "\\bbegin\\b",
       "end": "\\bend\\b",
-      "beginCaptures": { "0": { "name": "keyword.other.block.l5.verilog" } },
-      "endCaptures": { "0": { "name": "keyword.other.block.l5.verilog" } },
+      "beginCaptures": {
+        "0": {
+          "name": "keyword.other.block.l5.verilog"
+        }
+      },
+      "endCaptures": {
+        "0": {
+          "name": "keyword.other.block.l5.verilog"
+        }
+      },
       "patterns": [
-        { "include": "#statement" },
-        { "include": "#block-6" }
+        {
+          "include": "#statement"
+        },
+        {
+          "include": "#block-6"
+        }
       ]
     },
     "block-6": {
       "comment": "最深层，自递归：深度超过 6 的 begin/end 保持本层颜色，不会漏匹配。",
       "begin": "\\bbegin\\b",
       "end": "\\bend\\b",
-      "beginCaptures": { "0": { "name": "keyword.other.block.l6.verilog" } },
-      "endCaptures": { "0": { "name": "keyword.other.block.l6.verilog" } },
+      "beginCaptures": {
+        "0": {
+          "name": "keyword.other.block.l6.verilog"
+        }
+      },
+      "endCaptures": {
+        "0": {
+          "name": "keyword.other.block.l6.verilog"
+        }
+      },
       "patterns": [
-        { "include": "#statement" },
-        { "include": "#block-6" }
+        {
+          "include": "#statement"
+        },
+        {
+          "include": "#block-6"
+        }
       ]
     },
     "comment": {
       "patterns": [
-        { "name": "comment.line.double-slash.verilog", "match": "//.*$" },
-        { "name": "comment.block.verilog", "begin": "/\\*", "end": "\\*/" }
+        {
+          "name": "comment.line.double-slash.verilog",
+          "match": "//.*$"
+        },
+        {
+          "name": "comment.block.verilog",
+          "begin": "/\\*",
+          "end": "\\*/"
+        }
       ]
     },
     "string": {
@@ -100,7 +225,10 @@
       "begin": "\"",
       "end": "\"",
       "patterns": [
-        { "name": "constant.character.escape.verilog", "match": "\\\\." }
+        {
+          "name": "constant.character.escape.verilog",
+          "match": "\\\\."
+        }
       ]
     },
     "directive": {
@@ -120,8 +248,12 @@
         {
           "match": "\\b(module|macromodule|primitive)\\s+([A-Za-z_][A-Za-z0-9_$]*)",
           "captures": {
-            "1": { "name": "keyword.other.module.verilog" },
-            "2": { "name": "entity.name.type.module.verilog" }
+            "1": {
+              "name": "keyword.other.module.verilog"
+            },
+            "2": {
+              "name": "entity.name.type.module.verilog"
+            }
           }
         },
         {
@@ -135,8 +267,12 @@
         {
           "match": "\\b(task|function)\\s+(?:automatic\\s+|static\\s+)?(?:\\[[^\\]]*\\]\\s*)?([A-Za-z_][A-Za-z0-9_$]*)",
           "captures": {
-            "1": { "name": "keyword.control.task.verilog" },
-            "2": { "name": "entity.name.function.verilog" }
+            "1": {
+              "name": "keyword.control.task.verilog"
+            },
+            "2": {
+              "name": "entity.name.function.verilog"
+            }
           }
         },
         {
@@ -199,6 +335,45 @@
     "punctuation": {
       "name": "punctuation.verilog",
       "match": "[;,.()\\[\\]{}#@]"
+    },
+    "instance-param": {
+      "comment": "例化模块名（后跟参数表 #(...)）。TextMate 的 match 不能跨行，所以例化只能按行局部识别：这是参数表写在模块名同一行的情形",
+      "match": "\\b([A-Za-z_][A-Za-z0-9_$]*)(?=\\s*#\\s*\\()",
+      "captures": {
+        "1": {
+          "name": "entity.name.type.instance.verilog"
+        }
+      }
+    },
+    "instance-inline": {
+      "comment": "例化：模块名 实例名 (（同一行）。互斥地，module 声明已被更早的 #module 规则消费",
+      "match": "\\b([A-Za-z_][A-Za-z0-9_$]*)\\s+([A-Za-z_][A-Za-z0-9_$]*)(?=\\s*\\()",
+      "captures": {
+        "1": {
+          "name": "entity.name.type.instance.verilog"
+        },
+        "2": {
+          "name": "entity.name.instance.verilog"
+        }
+      }
+    },
+    "instance-name": {
+      "comment": "例化名（参数表跨行时，实例名出现在 ')' 之后）。关键字黑名单防止 (posedge clk) begin 的 begin 被误着色",
+      "match": "(?<=\\))\\s+(?!(?:begin|end|if|else|case|endcase|default|always|initial|for|while|forever|assign|module|input|output|inout|wire|reg|parameter|localparam|generate)\\b)([A-Za-z_][A-Za-z0-9_$]*)(?=\\s*\\()",
+      "captures": {
+        "1": {
+          "name": "entity.name.instance.verilog"
+        }
+      }
+    },
+    "port-connection": {
+      "comment": ".端口名( —— 只有着个名字；分层变色不受影响",
+      "match": "\\.\\s*([A-Za-z_][A-Za-z0-9_$]*)\\s*(?=\\()",
+      "captures": {
+        "1": {
+          "name": "variable.other.port.verilog"
+        }
+      }
     }
   }
 }

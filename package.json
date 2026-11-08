@@ -2,7 +2,7 @@
   "name": "verikit",
   "displayName": "VeriKit — Verilog 编辑助手",
   "description": "Verilog 代码编写辅助：高亮、语法检查、模块索引与一键例化",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "publisher": "qaq7321",
   "private": true,
   "license": "UNLICENSED",
@@ -215,6 +215,24 @@
             "scope": "keyword.operator.verilog",
             "settings": {
               "foreground": "#0000FF"
+            }
+          },
+          {
+            "scope": "entity.name.type.instance.verilog",
+            "settings": {
+              "foreground": "#00008B"
+            }
+          },
+          {
+            "scope": "entity.name.instance.verilog",
+            "settings": {
+              "foreground": "#0E8A8A"
+            }
+          },
+          {
+            "scope": "variable.other.port.verilog",
+            "settings": {
+              "foreground": "#A0522D"
             }
           },
           {
