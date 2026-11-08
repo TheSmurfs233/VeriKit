@@ -42,6 +42,40 @@ function buildDiagnosticsPayload(service: ToolchainService): Record<string, unkn
   };
 }
 
+/** 列出所有给 verilog / systemverilog 提供语言或 grammar 的扩展 —— 用于排查"谁在给我的文件上色" */
+function describeGrammarContributors(): string[] {
+  const lines: string[] = [];
+  for (const ext of vscode.extensions.all) {
+    const pkg = ext.packageJSON as {
+      version?: string;
+      contributes?: {
+        languages?: { id?: string }[];
+        grammars?: { language?: string; scopeName?: string; path?: string }[];
+      };
+    };
+    const langs = (pkg.contributes?.languages ?? []).filter(
+      (l) => l.id === 'verilog' || l.id === 'systemverilog'
+    );
+    const grams = (pkg.contributes?.grammars ?? []).filter(
+      (g) =>
+        g.language === 'verilog' ||
+        g.language === 'systemverilog' ||
+        (g.scopeName ?? '').startsWith('source.verilog')
+    );
+    if (langs.length === 0 && grams.length === 0) {
+      continue;
+    }
+    lines.push(`  - ${ext.id} v${pkg.version ?? '?'}${ext.isActive ? '（已激活）' : ''}`);
+    for (const g of grams) {
+      lines.push(`      grammar: ${g.scopeName ?? '?'}  ->  ${g.path ?? '?'}`);
+    }
+    for (const l of langs) {
+      lines.push(`      language: ${l.id ?? '?'}`);
+    }
+  }
+  return lines;
+}
+
 export function activate(context: vscode.ExtensionContext): void {
   const out = vscode.window.createOutputChannel(CHANNEL_NAME);
   channel = out;
@@ -101,6 +135,31 @@ export function activate(context: vscode.ExtensionContext): void {
           'VeriKit: 未找到 xvlog。执行「VeriKit: 选择工具链可执行文件」手动指定，或在设置中配置 verikit.xvlog.path。'
         );
       }
+    }),
+
+    // 排查"为什么高亮不是我写的那个 grammar"：把所有给 verilog 注册 grammar 的扩展列出来
+    vscode.commands.registerCommand('verikit.inspectLanguage', () => {
+      out.show(true);
+      const editor = vscode.window.activeTextEditor;
+      out.appendLine(`--- 语言与着色诊断 ${new Date().toISOString()} ---`);
+      out.appendLine(`当前文件      : ${editor ? editor.document.fileName : '(无)'}`);
+      out.appendLine(`languageId    : ${editor ? editor.document.languageId : '(无)'}`);
+      out.appendLine(`本扩展路径    : ${context.extensionPath}`);
+      out.appendLine('给 verilog/systemverilog 提供语言或 grammar 的扩展：');
+      const rows = describeGrammarContributors();
+      if (rows.length === 0) {
+        out.appendLine('  (无)');
+      } else {
+        for (const r of rows) {
+          out.appendLine(r);
+        }
+      }
+      out.appendLine(
+        rows.length > 1
+          ? '⚠ 有多个扩展同时提供 verilog grammar —— 着色可能不是本扩展的。建议用「运行扩展（干净环境）」启动配置复验。'
+          : '✓ 只有一个扩展提供 verilog grammar。'
+      );
+      out.appendLine(`当前主题      : ${vscode.workspace.getConfiguration('workbench').get('colorTheme')}`);
     }),
 
     // S1.5：只跑一遍、原样打印，不做解析。
