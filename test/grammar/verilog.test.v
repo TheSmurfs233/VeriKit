@@ -3,7 +3,7 @@
     // module foo is disabled
 //  ^^^^^^^^^^^^^^^^^^^^^^^^^ comment.line.double-slash.verilog
 
-    module counter #(
+    module counter ();
 //  ^^^^^^ keyword.other.module.verilog
 //         ^^^^^^^ entity.name.type.module.verilog
 
@@ -75,7 +75,7 @@
     counter #(
 //  ^^^^^^^ entity.name.type.instance.verilog
         .WIDTH (8)
-//       ^^^^^ variable.other.port.verilog
+//       ^^^^^ meta.param-name.verilog
     ) u_counter_a (
 //    ^^^^^^^^^^^ entity.name.instance.verilog
         .clk   (clk),

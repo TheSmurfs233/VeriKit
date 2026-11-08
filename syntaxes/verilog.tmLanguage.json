@@ -13,8 +13,11 @@
   ],
   "repository": {
     "statement": {
-      "comment": "块内外的公共规则。begin/end 不在这里 —— 它们由 block-N 链处理。",
+      "comment": "块内外的公共规则。begin/end 不在这里 —— 它们由 block-N 链处理。param-list 必须在最前：否则 # 会被 punctuation 规则吃掉，参数区无法成立。",
       "patterns": [
+        {
+          "include": "#param-list"
+        },
         {
           "include": "#comment"
         },
@@ -206,6 +209,45 @@
           "include": "#block-6"
         }
       ]
+    },
+    "param-list": {
+      "comment": "参数表 #(…) 区域（begin/end 可跨行）。目的：参数表里的 .参数名 用黑色，与连接表的 .端口名(浅棕) 区分。做法：区域内的 patterns 先用 param-name 挡住 .名，再用 paren-group 吞掉嵌套括号（否则内层 ) 会让区域提前结束，多参数表里后面的 .参数 会被误着成端口色），其余照常走 #statement。",
+      "begin": "#\\s*\\(",
+      "end": "\\)",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.verilog"
+        }
+      },
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.verilog"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#param-name"
+        },
+        {
+          "include": "#paren-group"
+        },
+        {
+          "include": "#statement"
+        }
+      ]
+    },
+    "param-name": {
+      "comment": "参数表里的 .参数名 —— 给一个无颜色规则的 scope 挡住 port-connection 的浅棕，渲染为默认黑",
+      "match": "\\.\\s*([A-Za-z_][A-Za-z0-9_$]*)\\s*(?=\\()",
+      "captures": {
+        "1": {
+          "name": "meta.param-name.verilog"
+        }
+      }
+    },
+    "paren-group": {
+      "comment": "吞掉一层嵌套括号（最多两层），防止参数值里的 ) 提前终止参数区",
+      "match": "\\((?:[^()]|\\((?:[^()]|\\([^()]*\\))*\\))*\\)"
     },
     "comment": {
       "patterns": [
