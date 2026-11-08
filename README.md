@@ -19,6 +19,20 @@ npm run verify        # 五段门禁：静态检查 / 单测 / 架构与文档 /
 
 调试：在 VSCode 里按 F5（会自动先编译），会打开一个加载了本插件的"扩展开发宿主"窗口。
 
+`.vscode/launch.json` 里有两个配置：
+
+| 配置 | 打开的目录 | 用途 |
+|---|---|---|
+| 运行扩展（当前工作区） | 插件源码目录 | 只确认插件能激活 |
+| **运行扩展（打开测试工作区）** | `../test-workspace` | **平时用这个** —— 弹出的窗口直接打开 HDL 测试工程，可以看高亮/诊断效果 |
+
+测试工作区在 `D:\Embedded\FPGA\test-workspace`，与插件源码平级，不属于本仓库。
+它包含 `rtl/counter.v`（正常模块）、`top.v`（跨文件例化）、`broken.v`（故意写错）、
+`legacy_nonansi.v`（非 ANSI 端口边界样本）、`中文文件名_测试.v`（非 ASCII 路径）。
+
+> 日常使用（不是开发）不需要 F5：`npm run package` 后
+> `code --install-extension dist/fpga-verilog-helper.vsix` 装一次即可。
+
 ## 文档
 
 | 文件 | 内容 |
