@@ -2,7 +2,7 @@
   "name": "verikit",
   "displayName": "VeriKit — Verilog 编辑助手",
   "description": "Verilog 代码编写辅助：高亮、语法检查、模块索引与一键例化",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "publisher": "qaq7321",
   "private": true,
   "license": "UNLICENSED",
@@ -152,12 +152,6 @@
             }
           },
           {
-            "scope": "keyword.other.block.verilog",
-            "settings": {
-              "foreground": "#0000FF"
-            }
-          },
-          {
             "scope": "keyword.other.edge.verilog",
             "settings": {
               "foreground": "#0000FF"
@@ -167,6 +161,42 @@
             "scope": "keyword.other.module.verilog",
             "settings": {
               "foreground": "#0000FF"
+            }
+          },
+          {
+            "scope": "keyword.other.block.l1.verilog",
+            "settings": {
+              "foreground": "#0000FF"
+            }
+          },
+          {
+            "scope": "keyword.other.block.l2.verilog",
+            "settings": {
+              "foreground": "#B45F04"
+            }
+          },
+          {
+            "scope": "keyword.other.block.l3.verilog",
+            "settings": {
+              "foreground": "#0E8A8A"
+            }
+          },
+          {
+            "scope": "keyword.other.block.l4.verilog",
+            "settings": {
+              "foreground": "#AF00DB"
+            }
+          },
+          {
+            "scope": "keyword.other.block.l5.verilog",
+            "settings": {
+              "foreground": "#A31515"
+            }
+          },
+          {
+            "scope": "keyword.other.block.l6.verilog",
+            "settings": {
+              "foreground": "#6B8E23"
             }
           },
           {

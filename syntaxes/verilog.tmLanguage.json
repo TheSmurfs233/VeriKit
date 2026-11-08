@@ -2,25 +2,93 @@
   "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
   "name": "Verilog",
   "scopeName": "source.verilog",
-  "comment": "手写的 Verilog-2001 子集。两条原则：① 注释/字符串必须排在最前，否则 // module foo 里的 module 会被着成关键字；② 语义不同的事物必须给不同 scope，否则主题只能涂一种颜色（改前就是全蓝）。",
+  "comment": "手写 Verilog-2001 子集。三条原则：① 注释/字符串最先匹配，否则 // module foo 里的 module 会被着色；② 语义不同的事物给不同 scope，否则主题只能涂一种颜色；③ begin/end 用 6 层定深嵌套链（block-1..block-6）实现逐层变色，第 6 层自递归承接更深的嵌套。",
   "patterns": [
-    { "include": "#comment" },
-    { "include": "#string" },
-    { "include": "#directive" },
-    { "include": "#module" },
-    { "include": "#task-function" },
-    { "include": "#edge" },
-    { "include": "#control" },
-    { "include": "#block" },
-    { "include": "#port-direction" },
-    { "include": "#storage" },
-    { "include": "#modifier" },
-    { "include": "#number" },
-    { "include": "#system-task" },
-    { "include": "#operator" },
-    { "include": "#punctuation" }
+    { "include": "#block-1" },
+    { "include": "#statement" }
   ],
   "repository": {
+    "statement": {
+      "comment": "块内外的公共规则。begin/end 不在这里 —— 它们由 block-N 链处理。",
+      "patterns": [
+        { "include": "#comment" },
+        { "include": "#string" },
+        { "include": "#directive" },
+        { "include": "#module" },
+        { "include": "#task-function" },
+        { "include": "#edge" },
+        { "include": "#control" },
+        { "include": "#port-direction" },
+        { "include": "#storage" },
+        { "include": "#modifier" },
+        { "include": "#number" },
+        { "include": "#system-task" },
+        { "include": "#assignment" },
+        { "include": "#operator" },
+        { "include": "#punctuation" }
+      ]
+    },
+    "block-1": {
+      "begin": "\\bbegin\\b",
+      "end": "\\bend\\b",
+      "beginCaptures": { "0": { "name": "keyword.other.block.l1.verilog" } },
+      "endCaptures": { "0": { "name": "keyword.other.block.l1.verilog" } },
+      "patterns": [
+        { "include": "#statement" },
+        { "include": "#block-2" }
+      ]
+    },
+    "block-2": {
+      "begin": "\\bbegin\\b",
+      "end": "\\bend\\b",
+      "beginCaptures": { "0": { "name": "keyword.other.block.l2.verilog" } },
+      "endCaptures": { "0": { "name": "keyword.other.block.l2.verilog" } },
+      "patterns": [
+        { "include": "#statement" },
+        { "include": "#block-3" }
+      ]
+    },
+    "block-3": {
+      "begin": "\\bbegin\\b",
+      "end": "\\bend\\b",
+      "beginCaptures": { "0": { "name": "keyword.other.block.l3.verilog" } },
+      "endCaptures": { "0": { "name": "keyword.other.block.l3.verilog" } },
+      "patterns": [
+        { "include": "#statement" },
+        { "include": "#block-4" }
+      ]
+    },
+    "block-4": {
+      "begin": "\\bbegin\\b",
+      "end": "\\bend\\b",
+      "beginCaptures": { "0": { "name": "keyword.other.block.l4.verilog" } },
+      "endCaptures": { "0": { "name": "keyword.other.block.l4.verilog" } },
+      "patterns": [
+        { "include": "#statement" },
+        { "include": "#block-5" }
+      ]
+    },
+    "block-5": {
+      "begin": "\\bbegin\\b",
+      "end": "\\bend\\b",
+      "beginCaptures": { "0": { "name": "keyword.other.block.l5.verilog" } },
+      "endCaptures": { "0": { "name": "keyword.other.block.l5.verilog" } },
+      "patterns": [
+        { "include": "#statement" },
+        { "include": "#block-6" }
+      ]
+    },
+    "block-6": {
+      "comment": "最深层，自递归：深度超过 6 的 begin/end 保持本层颜色，不会漏匹配。",
+      "begin": "\\bbegin\\b",
+      "end": "\\bend\\b",
+      "beginCaptures": { "0": { "name": "keyword.other.block.l6.verilog" } },
+      "endCaptures": { "0": { "name": "keyword.other.block.l6.verilog" } },
+      "patterns": [
+        { "include": "#statement" },
+        { "include": "#block-6" }
+      ]
+    },
     "comment": {
       "patterns": [
         { "name": "comment.line.double-slash.verilog", "match": "//.*$" },
@@ -85,12 +153,8 @@
       "name": "keyword.control.verilog",
       "match": "\\b(?:always|always_comb|always_ff|always_latch|initial|if|else|case|casex|casez|endcase|default|for|while|repeat|forever|fork|join|join_any|join_none|generate|endgenerate|assign|deassign|force|release|wait|disable|return|break|continue)\\b"
     },
-    "block": {
-      "name": "keyword.other.block.verilog",
-      "match": "\\b(?:begin|end)\\b"
-    },
     "port-direction": {
-      "comment": "端口方向单独成类：用户要求 input/output/inout 用青色（参考 TerosHDL）",
+      "comment": "端口方向单独成类：input/output/inout 用青色（参考 TerosHDL）",
       "name": "storage.type.port.verilog",
       "match": "\\b(?:input|output|inout)\\b"
     },
@@ -123,9 +187,14 @@
       "name": "support.function.system.verilog",
       "match": "\\$[A-Za-z_][A-Za-z0-9_$]*"
     },
+    "assignment": {
+      "comment": "赋值符号 <= 与 = 不参与运算符着色（用户要求默认黑色）。必须放在 #operator 之前；= 用 (?![=]) 负向前瞻，避免吞掉 == 与 ===。给了 scope 名是为了可在测试中断言，但没有任何主题/自定义规则给它颜色，所以渲染为默认黑色。",
+      "name": "assignment.operator.verilog",
+      "match": "<=|=(?![=])"
+    },
     "operator": {
       "name": "keyword.operator.verilog",
-      "match": "<=|>=|===|!==|==|!=|&&|\\|\\||<<<|>>>|<<|>>|\\*\\*|[+\\-*/%<>=!~&|^?:]"
+      "match": ">=|===|!==|==|!=|&&|\\|\\||<<<|>>>|<<|>>|\\*\\*|[+\\-*/%<>!~&|^?:]"
     },
     "punctuation": {
       "name": "punctuation.verilog",
