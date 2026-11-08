@@ -30,8 +30,30 @@ npm run verify        # 五段门禁：静态检查 / 单测 / 架构与文档 /
 它包含 `rtl/counter.v`（正常模块）、`top.v`（跨文件例化）、`broken.v`（故意写错）、
 `legacy_nonansi.v`（非 ANSI 端口边界样本）、`中文文件名_测试.v`（非 ASCII 路径）。
 
+### ⚠️ PowerShell 执行策略（本机已知问题）
+
+在 PowerShell 里直接敲 `npm` 会报：
+
+```
+npm : 无法加载文件 C:\Program Files\nodejs\npm.ps1，因为在此系统上禁止运行脚本
+```
+
+原因是 PowerShell 的执行策略禁止运行未签名脚本，而 `npm` 会被解析到同目录下的 `npm.ps1`。
+
+三个绕法，任选其一：
+
+| 做法 | 说明 |
+|---|---|
+| **用 Git Bash 终端** | 最省事；`verify.sh` 本来就要求 bash |
+| 用 `npm.cmd` | 如 `npm.cmd run verify`，走的是 cmd 批处理，不受策略限制 |
+| 改执行策略 | `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`（涉及系统安全设置，自行决定） |
+
+**项目里已经规避了这个问题**：`.vscode/tasks.json` 的构建任务直接调 `node esbuild.js`，
+不经过 npm，所以 F5 不会触发上面的报错。
+
 > 日常使用（不是开发）不需要 F5：`npm run package` 后
 > `code --install-extension dist/fpga-verilog-helper.vsix` 装一次即可。
+> 注意这条命令在 PowerShell 里要写成 `npm.cmd run package`。
 
 ## 文档
 

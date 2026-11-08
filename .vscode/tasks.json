@@ -2,11 +2,15 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "type": "npm",
-      "script": "compile",
-      "label": "npm: compile",
+      "label": "构建插件",
+      "detail": "node esbuild.js —— 不经过 npm，规避 PowerShell 禁止运行 npm.ps1 的策略限制",
+      "type": "shell",
+      "command": "node",
+      "args": ["esbuild.js"],
+      "options": { "cwd": "${workspaceFolder}" },
       "group": { "kind": "build", "isDefault": true },
-      "problemMatcher": []
+      "problemMatcher": [],
+      "presentation": { "reveal": "silent", "panel": "shared", "clear": true }
     }
   ]
 }

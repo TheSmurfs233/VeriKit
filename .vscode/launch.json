@@ -7,7 +7,7 @@
       "request": "launch",
       "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
       "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-      "preLaunchTask": "npm: compile"
+      "preLaunchTask": "构建插件"
     },
     {
       "name": "运行扩展（打开测试工作区）",
@@ -18,7 +18,7 @@
         "${workspaceFolder}/../test-workspace"
       ],
       "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-      "preLaunchTask": "npm: compile"
+      "preLaunchTask": "构建插件"
     }
   ]
 }
