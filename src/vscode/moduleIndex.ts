@@ -1,40 +1,21 @@
 import * as vscode from 'vscode';
-import { findModuleRanges } from '../core/parse/signals';
-import { parseInstances } from '../core/parse/instance';
-import { parseModuleHeaders, type PortInfo, type HeaderParam } from '../core/parse/moduleHeader';
+import { rebuildIndex, type IndexedModuleData } from '../core/parse/indexer';
 
 /**
  * 模块索引 v2：模块名 → 定义信息（文件/行/端口/参数/**子实例**）。
  *
  * children 是层次树的边（谁例化了谁）；file/line 支撑"跳转到模块定义"。
- * 同名多处定义 → 保留首个，冲突记录在 conflicts（树节点会标 ⚠）。
+ * 同名多处定义（**不同文件**）→ 冲突记录 + ⚠ 标记。
  *
- * 仍是 lite：verikit.* 配置变化 / 文件变化 → 标脏，下次查询全量重扫。
- * 失效时机：verilog 文档变化 / 打开 / 关闭 / 工作区文件增删改 → 下次查询时重建。
+ * 重建为纯函数（core/parse/indexer.ts，可单测）：磁盘文件与打开的文档合并传入，
+ * 按文件去重（打开的文档覆盖磁盘版本）—— 修复过"同一文件索引两次导致全部 ⚠
+ * 且实例翻倍"的 bug。
  */
 
-export interface IndexedChild {
-  moduleName: string;
-  instanceName: string;
-  /** 例化处行（0 基） */
-  line: number;
-}
-
-export interface IndexedModule {
-  name: string;
-  /** 定义文件（fsPath） */
-  file: string;
-  /** module 关键字行（0 基） */
-  line: number;
-  ports: PortInfo[];
-  params: HeaderParam[];
-  children: IndexedChild[];
-  /** 该模块名在工程中有多处定义 */
-  conflicted?: boolean;
-}
+export type IndexedModule = IndexedModuleData;
 
 export class ModuleIndex implements vscode.Disposable {
-  private map = new Map<string, IndexedModule>();
+  private map = new Map<string, IndexedModuleData>();
   private conflicts = new Map<string, string[]>();
   private built = false;
   private dirty = true;
@@ -76,82 +57,37 @@ export class ModuleIndex implements vscode.Disposable {
   }
 
   private async rebuild(): Promise<void> {
-    const map = new Map<string, IndexedModule>();
-    const conflicts = new Map<string, string[]>();
-
-    const indexOne = (text: string, file: string): void => {
-      // —— 模块定义（端口/参数/行号；同名多处 → 冲突记录，保留首个） ——
-      for (const h of parseModuleHeaders(text)) {
-        if (map.has(h.name)) {
-          const list = conflicts.get(h.name) ?? [map.get(h.name)!.file];
-          list.push(file);
-          conflicts.set(h.name, list);
-          continue;
-        }
-        map.set(h.name, {
-          name: h.name,
-          file,
-          line: h.line ?? 0,
-          ports: h.ports,
-          params: h.params ?? [],
-          children: [],
-        });
+    // 打开的文档优先收录（含未保存内容）；磁盘扫描时跳过它们，避免同文件重复索引
+    const files: { file: string; text: string }[] = [];
+    const openPaths = new Set<string>();
+    for (const doc of vscode.workspace.textDocuments) {
+      if (doc.languageId === 'verilog') {
+        files.push({ file: doc.fileName, text: doc.getText() });
+        openPaths.add(doc.fileName);
       }
-      // —— 例化归属：按模块行范围挂到所属模块（层次图的边） ——
-      const ranges = findModuleRanges(text);
-      for (const inst of parseInstances(text)) {
-        const ownerRange = ranges.find(
-          (r) => inst.startLine >= r.startLine && inst.startLine <= r.endLine
-        );
-        if (!ownerRange) {
-          continue;
-        }
-        const owner = map.get(ownerRange.name);
-        if (!owner || owner.file !== file) {
-          continue; // 冲突被跳过的那份定义，其例化不索引
-        }
-        owner.children.push({
-          moduleName: inst.moduleName,
-          instanceName: inst.instanceName,
-          line: inst.startLine,
-        });
-      }
-    };
-
+    }
     const uris = await vscode.workspace.findFiles('**/*.{v,vh}', '**/{node_modules,dist,.git}/**');
     for (const uri of uris) {
+      if (openPaths.has(uri.fsPath)) {
+        continue;
+      }
       try {
         const bytes = await vscode.workspace.fs.readFile(uri);
-        indexOne(new TextDecoder().decode(bytes), uri.fsPath);
+        files.push({ file: uri.fsPath, text: new TextDecoder().decode(bytes) });
       } catch {
         // 单个文件失败不影响整体
       }
     }
 
-    // 已打开的文档覆盖磁盘版本（未保存内容立即生效）
-    for (const doc of vscode.workspace.textDocuments) {
-      if (doc.languageId !== 'verilog') {
-        continue;
-      }
-      indexOne(doc.getText(), doc.fileName);
-    }
-
-    // 冲突标记
-    for (const name of conflicts.keys()) {
-      const m = map.get(name);
-      if (m) {
-        m.conflicted = true;
-      }
-    }
-
-    this.map = map;
+    const { modules, conflicts } = rebuildIndex(files);
+    this.map = modules;
     this.conflicts = conflicts;
     this.built = true;
     this.dirty = false;
     this.changeEmitter.fire();
   }
 
-  lookup(name: string): IndexedModule | undefined {
+  lookup(name: string): IndexedModuleData | undefined {
     return this.map.get(name);
   }
 
@@ -159,7 +95,7 @@ export class ModuleIndex implements vscode.Disposable {
     return [...this.map.keys()];
   }
 
-  all(): IndexedModule[] {
+  all(): IndexedModuleData[] {
     return [...this.map.values()];
   }
 
