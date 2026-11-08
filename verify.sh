@@ -26,8 +26,9 @@ echo "== 3/6 语法着色（TextMate grammar）=="
 npx vscode-tmgrammar-test -g syntaxes/verilog.tmLanguage.json "test/grammar/**/*.test.v"
 echo ""
 
-echo "== 4/6 架构与文档约束 =="
+echo "== 4/6 结构与文档约束 =="
 node test/arch.js
+node test/snippets_check.js
 python test/doc_check.py
 echo ""
 

@@ -128,7 +128,7 @@
       "",
       "    initial begin",
       "        #100 ${3:rst_n} = 1'b1;",
-      "        #1000 $finish;",
+      "        #1000 \\$finish;",
       "    end",
       "",
       "endmodule"
