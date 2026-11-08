@@ -18,57 +18,106 @@
   },
   "always_clk": {
     "prefix": "always",
-    "body": ["always @(posedge ${1:clk} or negedge ${2:rst_n}) begin", "    if (!${2:rst_n}) begin", "        $0", "    end else begin", "    end", "end"],
+    "body": [
+      "always @(posedge ${1:clk} or negedge ${2:rst_n}) begin",
+      "    if (!${2:rst_n}) begin",
+      "",
+      "    end",
+      "    else begin",
+      "        $0",
+      "    end",
+      "end"
+    ],
     "description": "带异步复位的时序逻辑块"
   },
   "always_comb": {
     "prefix": "alwaysc",
-    "body": ["always @(*) begin", "    $0", "end"],
+    "body": [
+      "always @(*) begin",
+      "    $0",
+      "end"
+    ],
     "description": "组合逻辑块"
   },
   "case": {
     "prefix": "case",
-    "body": ["case (${1:sel})", "    ${2:1'b0}: begin", "        $0", "    end", "    default: begin", "    end", "endcase"],
+    "body": [
+      "case (${1:sel})",
+      "    ${2:1'b0}: begin",
+      "        $0",
+      "    end",
+      "    default: begin",
+      "    end",
+      "endcase"
+    ],
     "description": "case 语句"
   },
   "if": {
     "prefix": "if",
-    "body": ["if (${1:cond}) begin", "    $0", "end else begin", "end"],
+    "body": [
+      "if (${1:cond}) begin",
+      "",
+      "    end",
+      "    else begin",
+      "        $0",
+      "    end",
+      "end"
+    ],
     "description": "if / else 块"
   },
   "forloop": {
     "prefix": "for",
-    "body": ["for (${1:i} = 0; ${1:i} < ${2:N}; ${1:i} = ${1:i} + 1) begin", "    $0", "end"],
+    "body": [
+      "for (${1:i} = 0; ${1:i} < ${2:N}; ${1:i} = ${1:i} + 1) begin",
+      "    $0",
+      "end"
+    ],
     "description": "for 循环"
   },
   "assign": {
     "prefix": "assign",
-    "body": ["assign ${1:out} = ${2:expr};"],
+    "body": [
+      "assign ${1:out} = ${2:expr};"
+    ],
     "description": "连续赋值"
   },
   "parameter": {
     "prefix": "parameter",
-    "body": ["parameter ${1:WIDTH} = ${2:8};"],
+    "body": [
+      "parameter ${1:WIDTH} = ${2:8};"
+    ],
     "description": "参数声明"
   },
   "localparam": {
     "prefix": "localparam",
-    "body": ["localparam ${1:NAME} = ${2:value};"],
+    "body": [
+      "localparam ${1:NAME} = ${2:value};"
+    ],
     "description": "局部参数"
   },
   "define": {
     "prefix": "define",
-    "body": ["`define ${1:NAME} ${2:value}"],
+    "body": [
+      "`define ${1:NAME} ${2:value}"
+    ],
     "description": "宏定义"
   },
   "ifdef": {
     "prefix": "ifdef",
-    "body": ["`ifdef ${1:SYNTHESIS}", "    $0", "`else", "", "`endif"],
+    "body": [
+      "`ifdef ${1:SYNTHESIS}",
+      "    $0",
+      "`else",
+      "",
+      "`endif"
+    ],
     "description": "条件编译"
   },
   "timescale": {
     "prefix": "timescale",
-    "body": ["`timescale 1ns / 1ps"],
+    "body": [
+      "`timescale 1ns / 1ps"
+    ],
     "description": "时间单位与精度"
   },
   "instance": {
