@@ -1,0 +1,103 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Verilog",
+  "scopeName": "source.verilog",
+  "comment": "手写的 Verilog-2001 子集。规则顺序即优先级：注释/字符串必须排在最前，否则 // module foo 里的 module 会被着成关键字（见 docs/10 §7 坑 #1）。",
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#string" },
+    { "include": "#directive" },
+    { "include": "#module" },
+    { "include": "#edge" },
+    { "include": "#keyword" },
+    { "include": "#storage" },
+    { "include": "#number" },
+    { "include": "#system-task" },
+    { "include": "#operator" },
+    { "include": "#punctuation" }
+  ],
+  "repository": {
+    "comment": {
+      "patterns": [
+        { "name": "comment.line.double-slash.verilog", "match": "//.*$" },
+        { "name": "comment.block.verilog", "begin": "/\\*", "end": "\\*/" }
+      ]
+    },
+    "string": {
+      "name": "string.quoted.double.verilog",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        { "name": "constant.character.escape.verilog", "match": "\\\\." }
+      ]
+    },
+    "directive": {
+      "patterns": [
+        {
+          "name": "keyword.control.preprocessor.verilog",
+          "match": "`(?:define|undef|ifdef|ifndef|elsif|else|endif|include|timescale|default_nettype|resetall|celldefine|endcelldefine|line|begin_keywords|end_keywords|unconnected_drive|nounconnected_drive)\\b"
+        },
+        {
+          "name": "variable.other.macro.verilog",
+          "match": "`[A-Za-z_][A-Za-z0-9_$]*"
+        }
+      ]
+    },
+    "module": {
+      "patterns": [
+        {
+          "match": "\\b(module|macromodule|primitive)\\s+([A-Za-z_][A-Za-z0-9_$]*)",
+          "captures": {
+            "1": { "name": "keyword.other.module.verilog" },
+            "2": { "name": "entity.name.type.module.verilog" }
+          }
+        },
+        {
+          "name": "keyword.other.module.verilog",
+          "match": "\\b(?:endmodule|endprimitive)\\b"
+        }
+      ]
+    },
+    "edge": {
+      "name": "keyword.operator.edge.verilog",
+      "match": "\\b(?:posedge|negedge|edge)\\b"
+    },
+    "keyword": {
+      "name": "keyword.control.verilog",
+      "match": "\\b(?:always|always_comb|always_ff|always_latch|initial|begin|end|if|else|case|casex|casez|endcase|default|for|while|repeat|forever|fork|join|join_any|join_none|generate|endgenerate|assign|deassign|force|release|wait|disable|return|break|continue|function|endfunction|task|endtask|specify|endspecify)\\b"
+    },
+    "storage": {
+      "name": "storage.type.verilog",
+      "match": "\\b(?:input|output|inout|reg|wire|logic|bit|byte|int|integer|real|realtime|time|shortint|longint|parameter|localparam|defparam|genvar|tri|tri0|tri1|wand|wor|trior|supply0|supply1|signed|unsigned|automatic|static)\\b"
+    },
+    "number": {
+      "patterns": [
+        {
+          "comment": "带位宽的进制数：8'hFF、4'b10xz、1'bx、16'sd123",
+          "name": "constant.numeric.verilog",
+          "match": "\\b\\d[\\d_]*'[sS]?[bBoOdDhH][0-9a-fA-FxXzZ?_]+"
+        },
+        {
+          "name": "constant.numeric.verilog",
+          "match": "\\b\\d[\\d_]*\\.\\d[\\d_]*(?:[eE][-+]?\\d+)?"
+        },
+        {
+          "name": "constant.numeric.verilog",
+          "match": "\\b\\d[\\d_]*\\b"
+        }
+      ]
+    },
+    "system-task": {
+      "name": "support.function.system.verilog",
+      "match": "\\$[A-Za-z_][A-Za-z0-9_$]*"
+    },
+    "operator": {
+      "name": "keyword.operator.verilog",
+      "match": "<=|>=|===|!==|==|!=|&&|\\|\\||<<<|>>>|<<|>>|\\*\\*|[+\\-*/%<>=!~&|^?:]"
+    },
+    "punctuation": {
+      "name": "punctuation.verilog",
+      "match": "[;,.()\\[\\]{}#@]"
+    }
+  }
+}
