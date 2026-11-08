@@ -3,6 +3,7 @@ import { BUILD_ID, VERSION, versionBanner } from './core/version';
 import { xvlogAdapter } from './core/toolchain/adapter';
 import { countLines, lintFileRaw } from './core/lint/raw';
 import { ToolchainService, type ToolchainSnapshot } from './vscode/toolchainService';
+import { BlockPairHighlight } from './vscode/blockPairHighlight';
 
 /**
  * 扩展入口：只做装配（创建通道 / 注册命令 / 推入 subscriptions），不含业务逻辑。
@@ -90,10 +91,12 @@ export function activate(context: vscode.ExtensionContext): void {
   out.appendLine(`activate: bootstrap done in ${Date.now() - activatedAt} ms`);
 
   const service = new ToolchainService(out);
+  const pairHighlight = new BlockPairHighlight();
 
   context.subscriptions.push(
     out,
     service,
+    pairHighlight,
 
     vscode.commands.registerCommand('verikit.showDiagnostics', () => {
       out.show(true);
