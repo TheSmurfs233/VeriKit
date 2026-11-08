@@ -1,0 +1,21 @@
+# 依赖
+node_modules/
+
+# 构建产物
+dist/
+out/
+*.vsix
+
+# 测试临时产物
+.vscode-test/
+coverage/
+
+# 工具本地状态（不版本化）
+.workbuddy/
+
+# 系统文件
+Thumbs.db
+.DS_Store
+
+# 日志
+*.log
