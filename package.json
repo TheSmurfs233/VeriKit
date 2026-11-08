@@ -2,7 +2,7 @@
   "name": "verikit",
   "displayName": "VeriKit — Verilog 编辑助手",
   "description": "Verilog 代码编写辅助：高亮、语法检查、模块索引与一键例化",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "publisher": "qaq7321",
   "private": true,
   "license": "UNLICENSED",

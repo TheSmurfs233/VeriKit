@@ -9,6 +9,8 @@ import { ModuleIndex } from './vscode/moduleIndex';
 import { registerPortDirectionInlay } from './vscode/inlayHints';
 import { registerSignalHover } from './vscode/signalHover';
 import { registerVerilogCompletion } from './vscode/completionProvider';
+import { DiagnosticController } from './vscode/diagnosticController';
+import { LintScheduler } from './vscode/lintScheduler';
 
 /**
  * 扩展入口：只做装配（创建通道 / 注册命令 / 推入 subscriptions），不含业务逻辑。
@@ -102,12 +104,16 @@ export function activate(context: vscode.ExtensionContext): void {
   const moduleIndex = new ModuleIndex();
   registerPortDirectionInlay(context, moduleIndex);
   registerVerilogCompletion(context, moduleIndex);
+  const diagnosticController = new DiagnosticController();
+  const lintScheduler = new LintScheduler(service, diagnosticController, out);
 
   context.subscriptions.push(
     out,
     service,
     pairHighlight,
     moduleIndex,
+    diagnosticController,
+    lintScheduler,
 
     vscode.commands.registerCommand('verikit.showDiagnostics', () => {
       out.show(true);
