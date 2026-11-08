@@ -11,6 +11,7 @@ import { registerSignalHover } from './vscode/signalHover';
 import { registerVerilogCompletion } from './vscode/completionProvider';
 import { DiagnosticController } from './vscode/diagnosticController';
 import { LintScheduler } from './vscode/lintScheduler';
+import { registerParserSelfCheck } from './vscode/selfCheckCommand';
 
 /**
  * 扩展入口：只做装配（创建通道 / 注册命令 / 推入 subscriptions），不含业务逻辑。
@@ -106,6 +107,7 @@ export function activate(context: vscode.ExtensionContext): void {
   registerVerilogCompletion(context, moduleIndex);
   const diagnosticController = new DiagnosticController();
   const lintScheduler = new LintScheduler(service, diagnosticController, out);
+  registerParserSelfCheck(context, service, out);
 
   context.subscriptions.push(
     out,
