@@ -2,7 +2,7 @@
   "name": "verikit",
   "displayName": "VeriKit — Verilog 编辑助手",
   "description": "Verilog 代码编写辅助：高亮、语法检查、模块索引与一键例化",
-  "version": "0.0.4",
+  "version": "0.1.0",
   "publisher": "qaq7321",
   "private": true,
   "license": "UNLICENSED",
@@ -24,8 +24,69 @@
         "command": "verikit.showDiagnostics",
         "title": "显示诊断信息",
         "category": "VeriKit"
+      },
+      {
+        "command": "verikit.exportDiagnostics",
+        "title": "导出诊断 JSON",
+        "category": "VeriKit"
+      },
+      {
+        "command": "verikit.probeToolchain",
+        "title": "检测工具链",
+        "category": "VeriKit"
+      },
+      {
+        "command": "verikit.pickToolchain",
+        "title": "选择工具链可执行文件",
+        "category": "VeriKit"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "VeriKit",
+      "properties": {
+        "verikit.toolchain": {
+          "type": "string",
+          "enum": [
+            "xvlog",
+            "none"
+          ],
+          "enumDescriptions": [
+            "使用 Vivado 的 xvlog 做语法检查",
+            "禁用语法检查（不探测、不调用任何外部进程）"
+          ],
+          "default": "xvlog",
+          "scope": "resource",
+          "order": 1,
+          "markdownDescription": "语法检查使用的工具链。目前仅支持 `xvlog`。"
+        },
+        "verikit.xvlog.path": {
+          "type": "string",
+          "default": "",
+          "scope": "machine",
+          "order": 2,
+          "markdownDescription": "**xvlog 可执行文件的绝对路径**。\n\n留空时按 `配置 → PATH → %XILINX_VIVADO% → 扫描目录` 的顺序自动探测。\n\n支持 `${env:VAR}` 与 `~` 展开。Windows 下需要 `.exe` / `.cmd` / `.bat`。\n\n不想手打路径？执行命令 **VeriKit: 选择工具链可执行文件**。"
+        },
+        "verikit.probe.scanDirs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "scope": "machine",
+          "order": 3,
+          "markdownDescription": "自动探测失败时的额外扫描目录（每个目录下直接查找可执行文件）。默认空，不硬编码任何厂商安装路径。"
+        },
+        "verikit.check.timeout": {
+          "type": "number",
+          "default": 10000,
+          "minimum": 1000,
+          "maximum": 60000,
+          "scope": "resource",
+          "order": 4,
+          "markdownDescription": "单次调用外部工具的超时（毫秒）。实测 `xvlog -version` 约 1 s，真正的语法检查会更久。"
+        }
+      }
+    }
   },
   "scripts": {
     "compile": "node esbuild.js",

@@ -68,7 +68,9 @@ def check_versions() -> None:
 
     notes.append(f"版本基线：v{ts_version} build {ts_build}")
 
-    # 声明当前基线的文档里，所有 "vX.Y.Z build N" 都必须与代码一致
+    # 只校验"基线声明行"（`> 最后更新：… vX.Y.Z build N`）。
+    # 同一份文档里的历史证据（某阶段在哪个版本验收的）必须保持原样，
+    # 否则每次递增版本都要篡改历史 —— 那和 doc_check 存在的意义正好相反。
     pattern = re.compile(r"v(\d+\.\d+\.\d+)\s+build\s+(\d+)")
     for name in VERSION_DOCS:
         doc = DOCS / name
@@ -76,17 +78,25 @@ def check_versions() -> None:
             errors.append(f"docs/{name}: 文件不存在")
             continue
         text = doc.read_text(encoding="utf-8")
+        found_baseline = False
         for lineno, line in enumerate(text.splitlines(), 1):
+            if "最后更新" not in line:
+                continue
             for m in pattern.finditer(line):
+                found_baseline = True
                 v, b = m.group(1), int(m.group(2))
                 if v != ts_version:
                     errors.append(
-                        f"docs/{doc.name}:{lineno} 版本号 v{v} != 代码 v{ts_version}"
+                        f"docs/{doc.name}:{lineno} 基线版本号 v{v} != 代码 v{ts_version}"
                     )
                 if b != ts_build:
                     errors.append(
-                        f"docs/{doc.name}:{lineno} build {b} != 代码 build {ts_build}"
+                        f"docs/{doc.name}:{lineno} 基线 build {b} != 代码 build {ts_build}"
                     )
+        if not found_baseline:
+            errors.append(
+                f"docs/{doc.name}: 找不到基线声明行（应为 `> 最后更新：… vX.Y.Z build N`）"
+            )
 
 
 # ---------------------------------------------------------------- 2. 表格列数
