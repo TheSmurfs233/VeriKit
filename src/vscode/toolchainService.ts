@@ -78,16 +78,27 @@ export class ToolchainService implements vscode.Disposable {
       clearTimeout(this.timer);
     }
     this.timer = setTimeout(() => {
-      void this.probe();
+      // 配置变了，缓存必须失效
+      void this.probe({ force: true });
     }, 300);
   }
 
   /**
-   * 执行一次探测。`force` 仅表示"允许覆盖已有结果"，本实现里没有额外缓存层，
-   * 真正的缓存体现在"没人调用就不探测"。
+   * 执行一次探测。
+   *
+   * 默认**命中缓存直接返回**：一次探测要起两个进程（存在性 + 版本 ≈ 0.8 s），
+   * 而 S1.5 手动验收时发现"执行一次检查"会连着探测两遍，白花 1.6 s。
+   *
+   * 传 `force: true` 才重新探测 —— 用于用户显式点"检测工具链"、改配置、改路径之后。
    */
-  async probe(): Promise<ToolchainSnapshot> {
+  async probe(opts: { force?: boolean } = {}): Promise<ToolchainSnapshot> {
     if (this.snapshot.probing) {
+      return this.snapshot;
+    }
+
+    // 已完成过一次探测且未要求强制刷新 → 直接用缓存
+    if (!opts.force && this.snapshot.presence !== undefined) {
+      this.out.appendLine('[probe] 命中缓存，跳过探测（如需刷新请执行「VeriKit: 检测工具链」）');
       return this.snapshot;
     }
 

@@ -87,7 +87,7 @@ export function activate(context: vscode.ExtensionContext): void {
     }),
 
     vscode.commands.registerCommand('verikit.probeToolchain', async () => {
-      const s = await service.probe();
+      const s = await service.probe({ force: true });
       if (s.disabled) {
         void vscode.window.showInformationMessage('VeriKit: 语法检查已禁用（verikit.toolchain = none）。');
         return;
@@ -188,7 +188,7 @@ export function activate(context: vscode.ExtensionContext): void {
       await vscode.workspace
         .getConfiguration()
         .update(xvlogAdapter.configKey, picked[0].fsPath, vscode.ConfigurationTarget.Global);
-      await service.probe();
+      await service.probe({ force: true });
     })
   );
 }
