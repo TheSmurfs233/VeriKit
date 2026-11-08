@@ -15,13 +15,27 @@ export type PortDirection = 'input' | 'output' | 'inout';
 export interface PortInfo {
   name: string;
   direction: PortDirection;
+  /** 端口项所在行（0 基）；解析自带行号后始终有值，旧调用方构造的对象可缺省 */
+  line?: number;
+}
+
+export interface HeaderParam {
+  name: string;
+  /** 默认值原文（可能为空） */
+  value?: string;
+  /** 参数项所在行（0 基） */
+  line?: number;
 }
 
 export interface ModuleHeader {
   name: string;
   ports: PortInfo[];
+  /** 头参数表（声明侧 #( parameter ... )），实例化侧的 #(.W(8)) 不在此列 */
+  params: HeaderParam[];
   /** 端口表里是否写了方向（ANSI 风格） */
   ansi: boolean;
+  /** module 关键字所在行（0 基） */
+  line?: number;
 }
 
 const DIRECTIONS: Record<string, PortDirection> = {
@@ -181,7 +195,19 @@ export function blankComments(text: string): string {
   return chars.join('');
 }
 
-function parsePortList(inner: string): PortInfo[] {
+/** 计算绝对下标所在的行（0 基） */
+export function lineOf(text: string, abs: number): number {
+  let l = 0;
+  const n = Math.min(abs, text.length);
+  for (let i = 0; i < n; i += 1) {
+    if (text[i] === '\n') {
+      l += 1;
+    }
+  }
+  return l;
+}
+
+function parsePortList(text: string, inner: string, base: number): PortInfo[] {
   const ports: PortInfo[] = [];
   let dir: PortDirection | null = null;
   for (const range of splitTopRanges(inner)) {
@@ -208,7 +234,9 @@ function parsePortList(inner: string): PortInfo[] {
     if (!name || !/^[A-Za-z_][A-Za-z0-9_$]*$/.test(name)) {
       continue;
     }
-    ports.push({ name, direction: dir });
+    // range.start 可能落在上一行尾的换行/空白上，行号要按 trim 后的首字符算
+    const lead = range.text.length - range.text.trimStart().length;
+    ports.push({ name, direction: dir, line: lineOf(text, base + range.start + lead) });
   }
   return ports;
 }
@@ -216,12 +244,13 @@ function parsePortList(inner: string): PortInfo[] {
 /** 解析文本里所有 module 声明的端口（ANSI 风格） */
 export function parseModuleHeaders(text: string): ModuleHeader[] {
   const headers: ModuleHeader[] = [];
+  let params: HeaderParam[] = [];
   const re = /\bmodule\s+([A-Za-z_][A-Za-z0-9_$]*)/g;
   for (const m of text.matchAll(re)) {
     const name = m[1];
     let i = skipWsComments(text, m.index + m[0].length);
 
-    // 可选的参数表 #(...)
+    // 可选的参数表 #(...) —— 顺便解析出参数名/默认值/行号（供悬停与 S3b 使用）
     if (text[i] === '#') {
       const j = skipWsComments(text, i + 1);
       if (text[j] === '(') {
@@ -229,12 +258,32 @@ export function parseModuleHeaders(text: string): ModuleHeader[] {
         if (close < 0) {
           continue;
         }
+        // 头参数表（声明侧）：parameter X = v, Y = v（Y 继承 parameter 关键字）
+        const pInner = blankComments(text.slice(j + 1, close));
+        for (const range of splitTopRanges(pInner)) {
+          let item = range.text.trim();
+          if (!item) {
+            continue;
+          }
+          item = item.replace(/^(?:parameter|localparam)\b\s*/, '');
+          const pm = /^([A-Za-z_][A-Za-z0-9_$]*)(?:\s*=\s*([^,]+))?$/.exec(item);
+          if (!pm) {
+            continue;
+          }
+          const lead = range.text.length - range.text.trimStart().length;
+          params.push({
+            name: pm[1],
+            value: pm[2] !== undefined ? pm[2].trim() : undefined,
+            line: lineOf(text, j + 1 + range.start + lead),
+          });
+        }
         i = skipWsComments(text, close + 1);
       }
     }
 
     if (text[i] !== '(') {
-      headers.push({ name, ports: [], ansi: false });
+      headers.push({ name, ports: [], params, ansi: false, line: lineOf(text, m.index) });
+      params = [];
       continue;
     }
     const close = findClose(text, i);
@@ -242,9 +291,10 @@ export function parseModuleHeaders(text: string): ModuleHeader[] {
       continue;
     }
     const inner = blankComments(text.slice(i + 1, close));
-    const ports = parsePortList(inner);
+    const ports = parsePortList(text, inner, i + 1);
     // 有方向可解析才算 ANSI：module legacy (a, b) 这种非 ANSI 也可能端口表非空
-    headers.push({ name, ports, ansi: ports.length > 0 });
+    headers.push({ name, ports, params, ansi: ports.length > 0, line: lineOf(text, m.index) });
+    params = [];
   }
   return headers;
 }

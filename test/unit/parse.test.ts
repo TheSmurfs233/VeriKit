@@ -28,26 +28,26 @@ describe('parseModuleHeaders', () => {
     expect(headers[0].name).toBe('riscv');
     expect(headers[0].ansi).toBe(true);
     expect(headers[0].ports).toEqual([
-      { name: 'clk', direction: 'input' },
-      { name: 'rst_n', direction: 'input' },
-      { name: 'led', direction: 'output' },
+      { name: 'clk', direction: 'input', line: 1 },
+      { name: 'rst_n', direction: 'input', line: 2 },
+      { name: 'led', direction: 'output', line: 3 },
     ]);
   });
 
   it('方向继承：input a, b → b 也是 input', () => {
     const headers = parseModuleHeaders('module m (input a, b, output c);');
     expect(headers[0].ports).toEqual([
-      { name: 'a', direction: 'input' },
-      { name: 'b', direction: 'input' },
-      { name: 'c', direction: 'output' },
+      { name: 'a', direction: 'input', line: 0 },
+      { name: 'b', direction: 'input', line: 0 },
+      { name: 'c', direction: 'output', line: 0 },
     ]);
   });
 
   it('位宽与 reg/wire 不干扰端口名', () => {
     const headers = parseModuleHeaders('module m (output reg [3:0] q, input wire clk);');
     expect(headers[0].ports).toEqual([
-      { name: 'q', direction: 'output' },
-      { name: 'clk', direction: 'input' },
+      { name: 'q', direction: 'output', line: 0 },
+      { name: 'clk', direction: 'input', line: 0 },
     ]);
   });
 
@@ -56,8 +56,8 @@ describe('parseModuleHeaders', () => {
       'module m #(parameter W = 8, parameter N = 2) (input [W-1:0] a, output [W*N-1:0] b);'
     );
     expect(headers[0].ports).toEqual([
-      { name: 'a', direction: 'input' },
-      { name: 'b', direction: 'output' },
+      { name: 'a', direction: 'input', line: 0 },
+      { name: 'b', direction: 'output', line: 0 },
     ]);
   });
 
@@ -180,8 +180,8 @@ describe('注释干扰回归（counter.v 实测 bug：ovf 曾被丢弃）', () =
     ].join('\n');
     const h = parseModuleHeaders(src)[0];
     expect(h.ports).toEqual([
-      { name: 'clk', direction: 'input' },
-      { name: 'led', direction: 'output' },
+      { name: 'clk', direction: 'input', line: 2 },
+      { name: 'led', direction: 'output', line: 4 },
     ]);
   });
 
