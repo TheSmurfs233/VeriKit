@@ -92,6 +92,11 @@ export class ModuleIndex implements vscode.Disposable {
     return this.map.get(name);
   }
 
+  /** 已索引的模块名清单（补全用） */
+  moduleNames(): string[] {
+    return [...this.map.keys()];
+  }
+
   dispose(): void {
     for (const d of this.disposables) {
       d.dispose();

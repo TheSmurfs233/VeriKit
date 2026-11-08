@@ -23,6 +23,15 @@ export interface InstanceInfo {
   moduleName: string;
   instanceName: string;
   connections: InstanceConnection[];
+  /** 例化起点（模块名首字符，0 基行列） */
+  startLine: number;
+  startChar: number;
+  /** 连接表左括号（ ( ）位置 */
+  openLine: number;
+  openChar: number;
+  /** 连接表右括号之后的位置（即连接区结束） */
+  endLine: number;
+  endChar: number;
 }
 
 const KEYWORDS = new Set([
@@ -159,10 +168,19 @@ export function parseInstances(text: string): InstanceInfo[] {
       continue;
     }
 
+    const startPos = lineChar(text, w1.start);
+    const openPos = lineChar(text, k2);
+    const endPos = lineChar(text, close + 1);
     out.push({
       moduleName: w1.word,
       instanceName: w2.word,
       connections: parseConnections(text, k2 + 1, close),
+      startLine: startPos.line,
+      startChar: startPos.char,
+      openLine: openPos.line,
+      openChar: openPos.char,
+      endLine: endPos.line,
+      endChar: endPos.char,
     });
     i = close + 1; // 跳过整个例化体，避免内部再被当作例化
   }

@@ -8,6 +8,7 @@ import { registerLiteralHover } from './vscode/literalHover';
 import { ModuleIndex } from './vscode/moduleIndex';
 import { registerPortDirectionInlay } from './vscode/inlayHints';
 import { registerSignalHover } from './vscode/signalHover';
+import { registerVerilogCompletion } from './vscode/completionProvider';
 
 /**
  * 扩展入口：只做装配（创建通道 / 注册命令 / 推入 subscriptions），不含业务逻辑。
@@ -100,6 +101,7 @@ export function activate(context: vscode.ExtensionContext): void {
   registerSignalHover(context);
   const moduleIndex = new ModuleIndex();
   registerPortDirectionInlay(context, moduleIndex);
+  registerVerilogCompletion(context, moduleIndex);
 
   context.subscriptions.push(
     out,
