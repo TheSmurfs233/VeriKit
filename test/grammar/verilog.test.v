@@ -8,7 +8,7 @@
 //         ^^^^^^^ entity.name.type.module.verilog
 
     parameter WIDTH = 8;
-//  ^^^^^^^^^ storage.type.verilog
+//  ^^^^^^^^^ storage.modifier.verilog
 //                    ^ constant.numeric.verilog
 
     assign y = 8'hFF;
@@ -27,3 +27,12 @@
 
     endmodule
 //  ^^^^^^^^^ keyword.other.module.verilog
+
+    always @(posedge clk or negedge rst_n) begin
+//  ^^^^^^ keyword.control.verilog
+//           ^^^^^^^ keyword.other.edge.verilog
+//                       ^^ keyword.other.edge.verilog
+//                                          ^^^^ keyword.other.block.verilog
+
+    end
+//  ^^^ keyword.other.block.verilog

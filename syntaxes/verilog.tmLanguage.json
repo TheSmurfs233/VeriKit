@@ -2,15 +2,18 @@
   "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
   "name": "Verilog",
   "scopeName": "source.verilog",
-  "comment": "手写的 Verilog-2001 子集。规则顺序即优先级：注释/字符串必须排在最前，否则 // module foo 里的 module 会被着成关键字（见 docs/10 §7 坑 #1）。",
+  "comment": "手写的 Verilog-2001 子集。两条原则：① 注释/字符串必须排在最前，否则 // module foo 里的 module 会被着成关键字；② 语义不同的事物必须给不同 scope，否则主题只能涂一种颜色（改前就是全蓝）。",
   "patterns": [
     { "include": "#comment" },
     { "include": "#string" },
     { "include": "#directive" },
     { "include": "#module" },
+    { "include": "#task-function" },
     { "include": "#edge" },
-    { "include": "#keyword" },
+    { "include": "#control" },
+    { "include": "#block" },
     { "include": "#storage" },
+    { "include": "#modifier" },
     { "include": "#number" },
     { "include": "#system-task" },
     { "include": "#operator" },
@@ -58,17 +61,40 @@
         }
       ]
     },
-    "edge": {
-      "name": "keyword.operator.edge.verilog",
-      "match": "\\b(?:posedge|negedge|edge)\\b"
+    "task-function": {
+      "patterns": [
+        {
+          "match": "\\b(task|function)\\s+(?:automatic\\s+|static\\s+)?(?:\\[[^\\]]*\\]\\s*)?([A-Za-z_][A-Za-z0-9_$]*)",
+          "captures": {
+            "1": { "name": "keyword.control.task.verilog" },
+            "2": { "name": "entity.name.function.verilog" }
+          }
+        },
+        {
+          "name": "keyword.control.task.verilog",
+          "match": "\\b(?:endtask|endfunction)\\b"
+        }
+      ]
     },
-    "keyword": {
+    "edge": {
+      "name": "keyword.other.edge.verilog",
+      "match": "\\b(?:posedge|negedge|edge|or)\\b"
+    },
+    "control": {
       "name": "keyword.control.verilog",
-      "match": "\\b(?:always|always_comb|always_ff|always_latch|initial|begin|end|if|else|case|casex|casez|endcase|default|for|while|repeat|forever|fork|join|join_any|join_none|generate|endgenerate|assign|deassign|force|release|wait|disable|return|break|continue|function|endfunction|task|endtask|specify|endspecify)\\b"
+      "match": "\\b(?:always|always_comb|always_ff|always_latch|initial|if|else|case|casex|casez|endcase|default|for|while|repeat|forever|fork|join|join_any|join_none|generate|endgenerate|assign|deassign|force|release|wait|disable|return|break|continue)\\b"
+    },
+    "block": {
+      "name": "keyword.other.block.verilog",
+      "match": "\\b(?:begin|end)\\b"
     },
     "storage": {
       "name": "storage.type.verilog",
-      "match": "\\b(?:input|output|inout|reg|wire|logic|bit|byte|int|integer|real|realtime|time|shortint|longint|parameter|localparam|defparam|genvar|tri|tri0|tri1|wand|wor|trior|supply0|supply1|signed|unsigned|automatic|static)\\b"
+      "match": "\\b(?:input|output|inout|reg|wire|logic|bit|byte|int|integer|real|realtime|time|shortint|longint|tri|tri0|tri1|wand|wor|trior|supply0|supply1)\\b"
+    },
+    "modifier": {
+      "name": "storage.modifier.verilog",
+      "match": "\\b(?:parameter|localparam|defparam|genvar|signed|unsigned|automatic|static)\\b"
     },
     "number": {
       "patterns": [
