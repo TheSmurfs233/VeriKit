@@ -2,34 +2,34 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "运行扩展（当前工作区）",
+      "name": "★ 运行扩展（干净环境，推荐）",
       "type": "extensionHost",
       "request": "launch",
-      "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
-      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-      "preLaunchTask": "构建插件"
-    },
-    {
-      "name": "运行扩展（打开测试工作区）",
-      "type": "extensionHost",
-      "request": "launch",
-      "args": [
-        "--extensionDevelopmentPath=${workspaceFolder}",
-        "${workspaceFolder}/../test-workspace"
-      ],
-      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-      "preLaunchTask": "构建插件"
-    },
-    {
-      "name": "运行扩展（干净环境：禁用其他扩展）",
-      "type": "extensionHost",
-      "request": "launch",
-      "comment": "宿主窗口默认加载所有已装扩展。若装了 mshr-h / TerosHDL / Digital IDE，它们也给 verilog 注册 grammar，谁最后注册谁生效。这个配置用 --disable-extensions 排除干扰。",
+      "comment": "本机装了 mshr-h / TerosHDL / Digital IDE，它们也给 verilog 注册 grammar，谁最后注册谁生效 —— 这时屏幕上看到的不是本扩展的 grammar。--disable-extensions 让宿主只加载本扩展。",
       "args": [
         "--extensionDevelopmentPath=${workspaceFolder}",
         "--disable-extensions",
         "${workspaceFolder}/../test-workspace"
       ],
+      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+      "preLaunchTask": "构建插件"
+    },
+    {
+      "name": "运行扩展（打开测试工作区，含其他扩展）",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}",
+        "${workspaceFolder}/../test-workspace"
+      ],
+      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+      "preLaunchTask": "构建插件"
+    },
+    {
+      "name": "运行扩展（当前工作区）",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
       "outFiles": ["${workspaceFolder}/dist/**/*.js"],
       "preLaunchTask": "构建插件"
     }
