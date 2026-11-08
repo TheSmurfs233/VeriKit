@@ -20,6 +20,6 @@ describe('版本号', () => {
   });
 
   it('版本横幅格式固定', () => {
-    expect(versionBanner()).toBe(`fpga-plugin v${VERSION} build ${BUILD_ID}`);
+    expect(versionBanner()).toBe(`verikit v${VERSION} build ${BUILD_ID}`);
   });
 });

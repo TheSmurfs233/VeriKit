@@ -20,6 +20,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 DOCS = ROOT / "docs"
 
+# 只检查"声明当前基线"的文档。
+# 00_开发日志 是追加式历史记录（永不改写旧条目）、4x_方案 是阶段性快照，
+# 两者都允许出现旧版本号，否则每次递增版本都要篡改历史。
+VERSION_DOCS = ["01_项目进度.md", "90_已知问题与限制.md"]
+
 errors: list[str] = []
 notes: list[str] = []
 
@@ -63,9 +68,13 @@ def check_versions() -> None:
 
     notes.append(f"版本基线：v{ts_version} build {ts_build}")
 
-    # docs 里所有 "vX.Y.Z build N" 都必须与代码一致
+    # 声明当前基线的文档里，所有 "vX.Y.Z build N" 都必须与代码一致
     pattern = re.compile(r"v(\d+\.\d+\.\d+)\s+build\s+(\d+)")
-    for doc in sorted(DOCS.glob("*.md")):
+    for name in VERSION_DOCS:
+        doc = DOCS / name
+        if not doc.exists():
+            errors.append(f"docs/{name}: 文件不存在")
+            continue
         text = doc.read_text(encoding="utf-8")
         for lineno, line in enumerate(text.splitlines(), 1):
             for m in pattern.finditer(line):

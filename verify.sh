@@ -30,8 +30,8 @@ node esbuild.js
 echo ""
 
 echo "== 5/5 打包 =="
-npx vsce package --allow-missing-repository -o dist/fpga-verilog-helper.vsix
-node -e "const s=require('fs').statSync('dist/fpga-verilog-helper.vsix').size;console.log('  vsix: '+(s/1024).toFixed(1)+' KB')"
+npx vsce package --allow-missing-repository -o dist/verikit.vsix
+node -e "const s=require('fs').statSync('dist/verikit.vsix').size;console.log('  vsix: '+(s/1024).toFixed(1)+' KB')"
 
 # 打包内容白名单：fail-closed。新增要打包的目录时必须显式加进白名单，
 # 否则 .vscodeignore 漏配会静默把 docs/、.workbuddy/ 之类塞进安装包。

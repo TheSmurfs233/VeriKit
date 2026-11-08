@@ -6,10 +6,13 @@ import { BUILD_ID, VERSION, versionBanner } from './core/version';
  * 不放任何业务逻辑。业务逻辑一律进 src/core（不得 import vscode）。
  */
 
+/** 输出通道名。用户在面板下拉框里看到的就是它，改它不影响任何对外 API。 */
+const CHANNEL_NAME = 'VeriKit';
+
 let channel: vscode.OutputChannel | undefined;
 
 export function activate(context: vscode.ExtensionContext): void {
-  const out = vscode.window.createOutputChannel('FPGA');
+  const out = vscode.window.createOutputChannel(CHANNEL_NAME);
   channel = out;
 
   // 激活第一行必须是版本号：没有版本号的日志等于无法追溯的实验
@@ -20,7 +23,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
   context.subscriptions.push(
     out,
-    vscode.commands.registerCommand('fpga.showDiagnostics', () => {
+    vscode.commands.registerCommand('verikit.showDiagnostics', () => {
       out.show(true);
       out.appendLine(`--- ${new Date().toISOString()} ---`);
       out.appendLine(`build    : ${versionBanner()}`);

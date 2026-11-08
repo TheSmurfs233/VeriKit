@@ -1,8 +1,8 @@
 {
-  "name": "fpga-verilog-helper",
-  "displayName": "FPGA Verilog Helper",
+  "name": "verikit",
+  "displayName": "VeriKit — Verilog 编辑助手",
   "description": "Verilog 代码编写辅助：高亮、语法检查、模块索引与一键例化",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "publisher": "qaq7321",
   "private": true,
   "license": "UNLICENSED",
@@ -21,9 +21,9 @@
   "contributes": {
     "commands": [
       {
-        "command": "fpga.showDiagnostics",
+        "command": "verikit.showDiagnostics",
         "title": "显示诊断信息",
-        "category": "FPGA"
+        "category": "VeriKit"
       }
     ]
   },
@@ -36,7 +36,7 @@
     "arch": "node test/arch.js",
     "doc": "python test/doc_check.py",
     "verify": "bash verify.sh",
-    "package": "vsce package --allow-missing-repository -o dist/fpga-verilog-helper.vsix"
+    "package": "vsce package --allow-missing-repository -o dist/verikit.vsix"
   },
   "devDependencies": {
     "@eslint/js": "^9.12.0",
