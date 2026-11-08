@@ -2,7 +2,7 @@
   "name": "fpga-verilog-helper",
   "displayName": "FPGA Verilog Helper",
   "description": "Verilog 代码编写辅助：高亮、语法检查、模块索引与一键例化",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "qaq7321",
   "private": true,
   "license": "UNLICENSED",
@@ -15,7 +15,9 @@
     "Formatters"
   ],
   "main": "./dist/extension.js",
-  "activationEvents": [],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "contributes": {
     "commands": [
       {
