@@ -2,7 +2,7 @@
   "name": "verikit",
   "displayName": "VeriKit — Verilog 编辑助手",
   "description": "Verilog 代码编写辅助：高亮、语法检查、模块索引与一键例化",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "publisher": "qaq7321",
   "private": true,
   "license": "UNLICENSED",
@@ -123,7 +123,115 @@
         "language": "verilog",
         "path": "./snippets/verilog.json"
       }
-    ]
+    ],
+    "configurationDefaults": {
+      "editor.tokenColorCustomizations": {
+        "textMateRules": [
+          {
+            "scope": "keyword.control.verilog",
+            "settings": {
+              "foreground": "#AF00DB"
+            }
+          },
+          {
+            "scope": "keyword.control.task.verilog",
+            "settings": {
+              "foreground": "#AF00DB"
+            }
+          },
+          {
+            "scope": "keyword.control.preprocessor.verilog",
+            "settings": {
+              "foreground": "#AF00DB"
+            }
+          },
+          {
+            "scope": "storage.modifier.verilog",
+            "settings": {
+              "foreground": "#AF00DB"
+            }
+          },
+          {
+            "scope": "keyword.other.block.verilog",
+            "settings": {
+              "foreground": "#0000FF"
+            }
+          },
+          {
+            "scope": "keyword.other.edge.verilog",
+            "settings": {
+              "foreground": "#0000FF"
+            }
+          },
+          {
+            "scope": "keyword.other.module.verilog",
+            "settings": {
+              "foreground": "#0000FF"
+            }
+          },
+          {
+            "scope": "storage.type.verilog",
+            "settings": {
+              "foreground": "#0000FF"
+            }
+          },
+          {
+            "scope": "keyword.operator.verilog",
+            "settings": {
+              "foreground": "#0000FF"
+            }
+          },
+          {
+            "scope": "entity.name.type.module.verilog",
+            "settings": {
+              "foreground": "#267F99"
+            }
+          },
+          {
+            "scope": "entity.name.function.verilog",
+            "settings": {
+              "foreground": "#795E26"
+            }
+          },
+          {
+            "scope": "constant.numeric.verilog",
+            "settings": {
+              "foreground": "#098658"
+            }
+          },
+          {
+            "scope": "string.quoted.double.verilog",
+            "settings": {
+              "foreground": "#A31515"
+            }
+          },
+          {
+            "scope": "support.function.system.verilog",
+            "settings": {
+              "foreground": "#795E26"
+            }
+          },
+          {
+            "scope": "variable.other.macro.verilog",
+            "settings": {
+              "foreground": "#795E26"
+            }
+          },
+          {
+            "scope": "comment.line.double-slash.verilog",
+            "settings": {
+              "foreground": "#008000"
+            }
+          },
+          {
+            "scope": "comment.block.verilog",
+            "settings": {
+              "foreground": "#008000"
+            }
+          }
+        ]
+      }
+    }
   },
   "scripts": {
     "compile": "node esbuild.js",
