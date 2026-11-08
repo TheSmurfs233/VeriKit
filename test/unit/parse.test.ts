@@ -149,3 +149,54 @@ describe('computePortDirectionHints', () => {
     expect(hints[0].port).toBe('clk');
   });
 });
+
+describe('注释干扰回归（counter.v 实测 bug：ovf 曾被丢弃）', () => {
+  const COUNTER = [
+    'module counter #(',
+    '    parameter WIDTH = 8',
+    ') (',
+    '    input                  clk,',
+    '    input                  rst_n,',
+    '    input                  en,          // 计数使能',
+    '    output reg [WIDTH-1:0] cnt,         // 当前计数值',
+    '    output                 ovf          // 溢出脉冲',
+    ');',
+  ].join('\n');
+
+  it('行尾注释不吞掉端口（ovf 曾被解析成注释词而丢弃）', () => {
+    const h = parseModuleHeaders(COUNTER)[0];
+    expect(h.ports.map((p) => p.name)).toEqual(['clk', 'rst_n', 'en', 'cnt', 'ovf']);
+    expect(h.ports.find((p) => p.name === 'ovf')?.direction).toBe('output');
+  });
+
+  it('独立成行的注释不破坏后续端口', () => {
+    const src = [
+      'module m (',
+      '    // 时钟',
+      '    input clk,',
+      '    // 输出',
+      '    output led',
+      ');',
+    ].join('\n');
+    const h = parseModuleHeaders(src)[0];
+    expect(h.ports).toEqual([
+      { name: 'clk', direction: 'input' },
+      { name: 'led', direction: 'output' },
+    ]);
+  });
+
+  it('例化连接表里的注释也不影响连接项与插入点', () => {
+    const src = [
+      'adder u1 (',
+      '    // 加数',
+      '    .a(a),',
+      '    .b(b) // 和',
+      ');',
+    ].join('\n');
+    const insts = parseInstances(src);
+    expect(insts[0].connections.map((c) => c.port)).toEqual(['a', 'b']);
+    // ".b(b) // 和" → ) 在第 9 列（0 基），插入点在其后
+    expect(insts[0].connections[1].endLine).toBe(3);
+    expect(insts[0].connections[1].endChar).toBe(9);
+  });
+});

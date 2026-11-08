@@ -133,6 +133,54 @@ export function splitTopRanges(
   return out;
 }
 
+/** 把注释内容替换成等长空格（保留换行与总长度）：
+ *  后续解析不再受注释干扰，同时所有下标保持不变（连接项插入点依赖这一点） */
+export function blankComments(text: string): string {
+  const chars = text.split('');
+  const n = text.length;
+  let i = 0;
+  while (i < n) {
+    const c = text[i];
+    if (c === '/' && text[i + 1] === '/') {
+      while (i < n && text[i] !== '\n') {
+        chars[i] = ' ';
+        i += 1;
+      }
+      continue;
+    }
+    if (c === '/' && text[i + 1] === '*') {
+      chars[i] = ' ';
+      chars[i + 1] = ' ';
+      i += 2;
+      while (i < n && !(text[i] === '*' && text[i + 1] === '/')) {
+        if (text[i] !== '\n') {
+          chars[i] = ' ';
+        }
+        i += 1;
+      }
+      if (i < n) {
+        chars[i] = ' ';
+        chars[i + 1] = ' ';
+        i += 2;
+      }
+      continue;
+    }
+    if (c === '"') {
+      i += 1;
+      while (i < n && text[i] !== '"') {
+        if (text[i] === '\\') {
+          i += 1;
+        }
+        i += 1;
+      }
+      i += 1;
+      continue;
+    }
+    i += 1;
+  }
+  return chars.join('');
+}
+
 function parsePortList(inner: string): PortInfo[] {
   const ports: PortInfo[] = [];
   let dir: PortDirection | null = null;
@@ -193,7 +241,7 @@ export function parseModuleHeaders(text: string): ModuleHeader[] {
     if (close < 0) {
       continue;
     }
-    const inner = text.slice(i + 1, close);
+    const inner = blankComments(text.slice(i + 1, close));
     const ports = parsePortList(inner);
     // 有方向可解析才算 ANSI：module legacy (a, b) 这种非 ANSI 也可能端口表非空
     headers.push({ name, ports, ansi: ports.length > 0 });

@@ -10,7 +10,7 @@
  *   - 找不到配对括号 → 跳过
  */
 
-import { findClose, skipWsComments } from './moduleHeader';
+import { blankComments, findClose, skipWsComments } from './moduleHeader';
 
 export interface InstanceConnection {
   port: string;
@@ -72,7 +72,8 @@ function parseConnections(
   innerEnd: number
 ): InstanceConnection[] {
   const connections: InstanceConnection[] = [];
-  const inner = text.slice(innerStart, innerEnd);
+  // 注释替换为等长空格：项的起点与连接项右括号的绝对下标都保持不变
+  const inner = blankComments(text.slice(innerStart, innerEnd));
 
   // 按顶层逗号切分，记录每项的绝对起点
   const items: { absStart: number; text: string }[] = [];
