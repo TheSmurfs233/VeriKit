@@ -43,7 +43,7 @@ node -e "const s=require('fs').statSync('dist/verikit.vsix').size;console.log(' 
 # 打包内容白名单：fail-closed。新增要打包的目录时必须显式加进白名单，
 # 否则 .vscodeignore 漏配会静默把 docs/、.workbuddy/ 之类塞进安装包。
 # 注意：不能用中间文件收集清单——那会把清单本身也打进包里（踩过一次）。
-LEAK=$(npx vsce ls | grep -Ev '^(README\.md|LICENSE|LICENSE\.md|package\.json|dist/extension\.js$|grammars/|syntaxes/|snippets/|language-configuration\.json)' || true)
+LEAK=$(npx vsce ls | grep -Ev '^(README\.md|LICENSE|LICENSE\.md|package\.json|dist/extension\.js$|grammars/|syntaxes/|snippets/|language-configuration\.json|media/)' || true)
 if [ -n "$LEAK" ]; then
   echo "  -> FAIL: 打包内容含白名单之外的路径（检查 .vscodeignore）:"
   echo "$LEAK" | sed 's/^/     /'

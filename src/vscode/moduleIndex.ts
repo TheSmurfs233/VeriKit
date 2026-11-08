@@ -1,19 +1,41 @@
 import * as vscode from 'vscode';
-import { parseModuleHeaders, type PortInfo } from '../core/parse/moduleHeader';
+import { findModuleRanges } from '../core/parse/signals';
+import { parseInstances } from '../core/parse/instance';
+import { parseModuleHeaders, type PortInfo, type HeaderParam } from '../core/parse/moduleHeader';
 
 /**
- * 模块索引（S3b 的 lite 版）：
- *   全量扫描工作区里的 .v/.vh 文件，解析模块头，建立 模块名 → 端口列表 的映射。
+ * 模块索引 v2：模块名 → 定义信息（文件/行/端口/参数/**子实例**）。
  *
- * 为什么是 lite：
- *   - 每次失效后全量重扫，不做增量/持久化。自用工程规模（几十个文件）完全够用。
- *   - 将来 S3b 正式做增量索引时替换内部实现，lookup 接口不变。
+ * children 是层次树的边（谁例化了谁）；file/line 支撑"跳转到模块定义"。
+ * 同名多处定义 → 保留首个，冲突记录在 conflicts（树节点会标 ⚠）。
  *
- * 失效时机：verilog 文档变化 / 打开 / 关闭 / 工作区文件增删改 → 标脏，下次查询时重建。
+ * 仍是 lite：verikit.* 配置变化 / 文件变化 → 标脏，下次查询全量重扫。
+ * 失效时机：verilog 文档变化 / 打开 / 关闭 / 工作区文件增删改 → 下次查询时重建。
  */
 
+export interface IndexedChild {
+  moduleName: string;
+  instanceName: string;
+  /** 例化处行（0 基） */
+  line: number;
+}
+
+export interface IndexedModule {
+  name: string;
+  /** 定义文件（fsPath） */
+  file: string;
+  /** module 关键字行（0 基） */
+  line: number;
+  ports: PortInfo[];
+  params: HeaderParam[];
+  children: IndexedChild[];
+  /** 该模块名在工程中有多处定义 */
+  conflicted?: boolean;
+}
+
 export class ModuleIndex implements vscode.Disposable {
-  private map = new Map<string, PortInfo[]>();
+  private map = new Map<string, IndexedModule>();
+  private conflicts = new Map<string, string[]>();
   private built = false;
   private dirty = true;
   private building: Promise<void> | null = null;
@@ -40,7 +62,6 @@ export class ModuleIndex implements vscode.Disposable {
     );
   }
 
-  /** 需要时重建；并发调用会合并为同一次重建 */
   async ensureBuilt(): Promise<void> {
     if (this.built && !this.dirty) {
       return;
@@ -55,46 +76,95 @@ export class ModuleIndex implements vscode.Disposable {
   }
 
   private async rebuild(): Promise<void> {
-    const map = new Map<string, PortInfo[]>();
+    const map = new Map<string, IndexedModule>();
+    const conflicts = new Map<string, string[]>();
+
+    const indexOne = (text: string, file: string): void => {
+      // —— 模块定义（端口/参数/行号；同名多处 → 冲突记录，保留首个） ——
+      for (const h of parseModuleHeaders(text)) {
+        if (map.has(h.name)) {
+          const list = conflicts.get(h.name) ?? [map.get(h.name)!.file];
+          list.push(file);
+          conflicts.set(h.name, list);
+          continue;
+        }
+        map.set(h.name, {
+          name: h.name,
+          file,
+          line: h.line ?? 0,
+          ports: h.ports,
+          params: h.params ?? [],
+          children: [],
+        });
+      }
+      // —— 例化归属：按模块行范围挂到所属模块（层次图的边） ——
+      const ranges = findModuleRanges(text);
+      for (const inst of parseInstances(text)) {
+        const ownerRange = ranges.find(
+          (r) => inst.startLine >= r.startLine && inst.startLine <= r.endLine
+        );
+        if (!ownerRange) {
+          continue;
+        }
+        const owner = map.get(ownerRange.name);
+        if (!owner || owner.file !== file) {
+          continue; // 冲突被跳过的那份定义，其例化不索引
+        }
+        owner.children.push({
+          moduleName: inst.moduleName,
+          instanceName: inst.instanceName,
+          line: inst.startLine,
+        });
+      }
+    };
+
     const uris = await vscode.workspace.findFiles('**/*.{v,vh}', '**/{node_modules,dist,.git}/**');
     for (const uri of uris) {
       try {
         const bytes = await vscode.workspace.fs.readFile(uri);
-        for (const h of parseModuleHeaders(new TextDecoder().decode(bytes))) {
-          if (h.ports.length > 0) {
-            map.set(h.name, h.ports);
-          }
-        }
+        indexOne(new TextDecoder().decode(bytes), uri.fsPath);
       } catch {
-        // 单个文件读不了/解析不了不影响整体
+        // 单个文件失败不影响整体
       }
     }
 
-    // 已打开的文档覆盖磁盘版本（可能是未保存的新内容）
+    // 已打开的文档覆盖磁盘版本（未保存内容立即生效）
     for (const doc of vscode.workspace.textDocuments) {
       if (doc.languageId !== 'verilog') {
         continue;
       }
-      for (const h of parseModuleHeaders(doc.getText())) {
-        if (h.ports.length > 0) {
-          map.set(h.name, h.ports);
-        }
+      indexOne(doc.getText(), doc.fileName);
+    }
+
+    // 冲突标记
+    for (const name of conflicts.keys()) {
+      const m = map.get(name);
+      if (m) {
+        m.conflicted = true;
       }
     }
 
     this.map = map;
+    this.conflicts = conflicts;
     this.built = true;
     this.dirty = false;
     this.changeEmitter.fire();
   }
 
-  lookup(name: string): PortInfo[] | undefined {
+  lookup(name: string): IndexedModule | undefined {
     return this.map.get(name);
   }
 
-  /** 已索引的模块名清单（补全用） */
   moduleNames(): string[] {
     return [...this.map.keys()];
+  }
+
+  all(): IndexedModule[] {
+    return [...this.map.values()];
+  }
+
+  isConflicted(name: string): boolean {
+    return this.conflicts.has(name);
   }
 
   dispose(): void {

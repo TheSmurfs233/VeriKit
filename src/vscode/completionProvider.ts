@@ -64,7 +64,7 @@ export function registerVerilogCompletion(
             let ports = local && local.ports.length > 0 ? local.ports : undefined;
             if (!ports) {
               await index.ensureBuilt();
-              ports = index.lookup(inst.moduleName);
+              ports = index.lookup(inst.moduleName)?.ports;
             }
             if (!ports || ports.length === 0) {
               return undefined;

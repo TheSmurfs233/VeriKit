@@ -35,7 +35,7 @@ export class PortDirectionInlayHints implements vscode.InlayHintsProvider {
         const h = headers.find((x) => x.name === mod);
         return h && h.ports.length > 0 ? h.ports : undefined;
       }
-      return this.index.lookup(mod);
+      return this.index.lookup(mod)?.ports;
     });
 
     return hints
