@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { BUILD_ID, VERSION, versionBanner } from './core/version';
 import { xvlogAdapter } from './core/toolchain/adapter';
+import { countLines, lintFileRaw } from './core/lint/raw';
 import { ToolchainService, type ToolchainSnapshot } from './vscode/toolchainService';
 
 /**
@@ -100,6 +101,72 @@ export function activate(context: vscode.ExtensionContext): void {
           'VeriKit: 未找到 xvlog。执行「VeriKit: 选择工具链可执行文件」手动指定，或在设置中配置 verikit.xvlog.path。'
         );
       }
+    }),
+
+    // S1.5：只跑一遍、原样打印，不做解析。
+    // 目的：打通"文件 → 进程 → 输出"的端到端链路，并为 S4 的解析器采集真实 fixture。
+    vscode.commands.registerCommand('verikit.lintFileRaw', async () => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) {
+        void vscode.window.showWarningMessage('VeriKit: 请先打开一个 .v 文件。');
+        return;
+      }
+      const doc = editor.document;
+      if (!/\.v$/i.test(doc.fileName)) {
+        void vscode.window.showWarningMessage('VeriKit: 当前文件不是 .v 文件。');
+        return;
+      }
+      if (doc.isDirty) {
+        // xvlog 读的是磁盘文件，未保存的改动它看不到 —— 不提示的话用户会以为检查结果不对
+        void vscode.window.showWarningMessage(
+          'VeriKit: 文件有未保存的改动，请先保存（检查读的是磁盘文件）。'
+        );
+        return;
+      }
+
+      await vscode.window.withProgress(
+        { location: vscode.ProgressLocation.Window, title: 'VeriKit: 检查中…' },
+        async () => {
+          const state = await service.probe();
+          if (!state.presence?.found || !state.presence.exePath) {
+            out.show(true);
+            out.appendLine('[lint] 未找到 xvlog，无法检查。');
+            void vscode.window.showWarningMessage(
+              'VeriKit: 未找到 xvlog，请先执行「VeriKit: 选择工具链可执行文件」。'
+            );
+            return;
+          }
+
+          const cfg = vscode.workspace.getConfiguration();
+          const timeoutMs = cfg.get<number>('verikit.check.timeout', xvlogAdapter.defaultTimeoutMs);
+
+          out.show(true);
+          out.appendLine(`--- 原始检查 ${new Date().toISOString()} ---`);
+          out.appendLine(`file    : ${doc.fileName}`);
+          out.appendLine(`exe     : ${state.presence.exePath}`);
+
+          const r = await lintFileRaw(xvlogAdapter, state.presence.exePath, doc.fileName, {
+            timeoutMs,
+          });
+
+          const stats = countLines(`${r.stdout}\n${r.stderr}`);
+          out.appendLine(
+            `exit    : ${r.code ?? 'null'}   timedOut=${r.timedOut}   elapsed=${r.elapsedMs} ms`
+          );
+          out.appendLine(
+            `lines   : total=${stats.total} INFO=${stats.info} WARNING=${stats.warning} ERROR=${stats.error} 其他=${stats.other}`
+          );
+          out.appendLine('--- stdout ---');
+          out.appendLine(r.stdout.trimEnd() || '(empty)');
+          if (r.stderr.trim()) {
+            out.appendLine('--- stderr ---');
+            out.appendLine(r.stderr.trimEnd());
+          }
+          void vscode.window.showInformationMessage(
+            `VeriKit: 检查完成（${r.elapsedMs} ms），详见 Output 面板。`
+          );
+        }
+      );
     }),
 
     vscode.commands.registerCommand('verikit.pickToolchain', async () => {

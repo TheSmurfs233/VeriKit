@@ -1,0 +1,4 @@
+INFO: [VRFC 10-2263] Analyzing Verilog file "/proj/broken.v" into library work
+INFO: [VRFC 10-311] analyzing module broken
+ERROR: [VRFC 10-4982] syntax error near 'input' [/proj/broken.v:7]
+ERROR: [VRFC 10-8549] Verilog 2000 keyword 'input' used in incorrect context [/proj/broken.v:7]

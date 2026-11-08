@@ -1,0 +1,2 @@
+INFO: [VRFC 10-2263] Analyzing Verilog file "/proj/counter.v" into library work
+INFO: [VRFC 10-311] analyzing module counter

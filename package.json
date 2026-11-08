@@ -2,7 +2,7 @@
   "name": "verikit",
   "displayName": "VeriKit — Verilog 编辑助手",
   "description": "Verilog 代码编写辅助：高亮、语法检查、模块索引与一键例化",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "publisher": "qaq7321",
   "private": true,
   "license": "UNLICENSED",
@@ -28,6 +28,11 @@
       {
         "command": "verikit.exportDiagnostics",
         "title": "导出诊断 JSON",
+        "category": "VeriKit"
+      },
+      {
+        "command": "verikit.lintFileRaw",
+        "title": "检查当前文件（原始输出）",
         "category": "VeriKit"
       },
       {
