@@ -40,8 +40,47 @@ export class LintScheduler implements vscode.Disposable {
       vscode.workspace.onDidCloseTextDocument((d) => {
         this.controller.delete(d.uri);
         this.seqByUri.delete(d.uri.toString());
+      }),
+      // 磁盘回读：外部改动（git 切分支 / 其他编辑器）时，VSCode 发出 contentChanges
+      // 为空的 change 事件 —— 恰好可识别且磁盘与缓冲一致，触发检查零额外代价
+      vscode.workspace.onDidChangeTextDocument((e) => {
+        if (e.contentChanges.length === 0 && LintScheduler.isCheckable(e.document)) {
+          void this.lint(e.document);
+        }
+      }),
+      // 文件重命名：旧路径的诊断与序号清掉；新路径是 .v 则触发检查
+      vscode.workspace.onDidRenameFiles((e) => {
+        for (const f of e.files) {
+          this.controller.delete(f.oldUri);
+          this.seqByUri.delete(f.oldUri.toString());
+        }
+        for (const f of e.files) {
+          void vscode.workspace.openTextDocument(f.newUri).then(
+            (doc) => {
+              if (LintScheduler.isCheckable(doc)) {
+                void this.lint(doc);
+              }
+            },
+            () => undefined
+          );
+        }
+      }),
+      // 文件删除：诊断与序号清掉
+      vscode.workspace.onDidDeleteFiles((e) => {
+        for (const f of e.files) {
+          this.controller.delete(f);
+          this.seqByUri.delete(f.toString());
+        }
       })
     );
+
+    // 激活时补检：窗口恢复的文档不会触发 onDidOpen（事件先于激活完成），
+    // 不补检的话红线要等第一次保存才出现 —— 这是本轮修掉的真缺口
+    for (const doc of vscode.workspace.textDocuments) {
+      if (LintScheduler.isCheckable(doc)) {
+        void this.lint(doc);
+      }
+    }
   }
 
   private static isCheckable(doc: vscode.TextDocument): boolean {
