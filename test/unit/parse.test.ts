@@ -1,0 +1,151 @@
+import { describe, expect, it } from 'vitest';
+import { parseModuleHeaders } from '../../src/core/parse/moduleHeader';
+import { parseInstances } from '../../src/core/parse/instance';
+import { computePortDirectionHints } from '../../src/core/parse/inlay';
+import type { PortInfo } from '../../src/core/parse/moduleHeader';
+
+const HEADER = [
+  'module riscv (',
+  '    input clk,',
+  '    input rst_n,',
+  '    output led',
+  ');',
+  'endmodule',
+].join('\n');
+
+const INSTANCE = [
+  'riscv riscv_inst (',
+  '    .clk(clk_25m),',
+  '    .rst_n(rst_n),',
+  '    .led(led)',
+  ');',
+].join('\n');
+
+describe('parseModuleHeaders', () => {
+  it('解析 ANSI 端口方向', () => {
+    const headers = parseModuleHeaders(HEADER);
+    expect(headers).toHaveLength(1);
+    expect(headers[0].name).toBe('riscv');
+    expect(headers[0].ansi).toBe(true);
+    expect(headers[0].ports).toEqual([
+      { name: 'clk', direction: 'input' },
+      { name: 'rst_n', direction: 'input' },
+      { name: 'led', direction: 'output' },
+    ]);
+  });
+
+  it('方向继承：input a, b → b 也是 input', () => {
+    const headers = parseModuleHeaders('module m (input a, b, output c);');
+    expect(headers[0].ports).toEqual([
+      { name: 'a', direction: 'input' },
+      { name: 'b', direction: 'input' },
+      { name: 'c', direction: 'output' },
+    ]);
+  });
+
+  it('位宽与 reg/wire 不干扰端口名', () => {
+    const headers = parseModuleHeaders('module m (output reg [3:0] q, input wire clk);');
+    expect(headers[0].ports).toEqual([
+      { name: 'q', direction: 'output' },
+      { name: 'clk', direction: 'input' },
+    ]);
+  });
+
+  it('参数表被跳过，位宽里可以用参数', () => {
+    const headers = parseModuleHeaders(
+      'module m #(parameter W = 8, parameter N = 2) (input [W-1:0] a, output [W*N-1:0] b);'
+    );
+    expect(headers[0].ports).toEqual([
+      { name: 'a', direction: 'input' },
+      { name: 'b', direction: 'output' },
+    ]);
+  });
+
+  it('非 ANSI（端口表为空）→ ansi=false，方向未知', () => {
+    const headers = parseModuleHeaders('module legacy (a, b);\n input a;\nendmodule');
+    expect(headers[0].ansi).toBe(false);
+    expect(headers[0].ports).toEqual([]);
+  });
+
+  it('一个文件里多个模块', () => {
+    const headers = parseModuleHeaders('module a (input x); endmodule\nmodule b (output y); endmodule');
+    expect(headers.map((h) => h.name)).toEqual(['a', 'b']);
+  });
+});
+
+describe('parseInstances', () => {
+  it('解析命名连接与插入点（在连接项右括号之后）', () => {
+    const insts = parseInstances(INSTANCE);
+    expect(insts).toHaveLength(1);
+    expect(insts[0].moduleName).toBe('riscv');
+    expect(insts[0].instanceName).toBe('riscv_inst');
+    expect(insts[0].connections.map((c) => c.port)).toEqual(['clk', 'rst_n', 'led']);
+    // 第 2 行 ".clk(clk_25m)," → ")" 之后是第 2 行第 17 列（0 基）
+    expect(insts[0].connections[0].endLine).toBe(1);
+    expect(insts[0].connections[0].endChar).toBe(17);
+  });
+
+  it('带参数的例化', () => {
+    const insts = parseInstances('riscv #(.W(8)) u1 (.clk(clk), .led(led));');
+    expect(insts[0].moduleName).toBe('riscv');
+    expect(insts[0].connections.map((c) => c.port)).toEqual(['clk', 'led']);
+  });
+
+  it('module 声明不会被误判为例化', () => {
+    expect(parseInstances(HEADER)).toEqual([]);
+  });
+
+  it('控制流不会被误判', () => {
+    const src = 'always @(posedge clk) begin\n  if (en) q <= 1\'b1;\nend';
+    expect(parseInstances(src)).toEqual([]);
+  });
+
+  it('位置连接 → connections 为空（v1 不处理）', () => {
+    const insts = parseInstances('adder u_add (a, b, sum);');
+    expect(insts).toHaveLength(1);
+    expect(insts[0].connections).toEqual([]);
+  });
+
+  it('连接项里允许拼接 {}', () => {
+    const insts = parseInstances('adder u_add (.a({x, y}), .sum(s));');
+    expect(insts[0].connections.map((c) => c.port)).toEqual(['a', 'sum']);
+  });
+
+  it('多个例化', () => {
+    const src = 'adder u1 (.a(a));\nadder u2 (.b(b));';
+    expect(parseInstances(src).map((i) => i.instanceName)).toEqual(['u1', 'u2']);
+  });
+});
+
+describe('computePortDirectionHints', () => {
+  const lookup = (name: string): PortInfo[] | undefined => {
+    if (name === 'riscv') {
+      return [
+        { name: 'clk', direction: 'input' },
+        { name: 'rst_n', direction: 'input' },
+        { name: 'led', direction: 'output' },
+      ];
+    }
+    return undefined;
+  };
+
+  it('每个连接项产出一条方向提示', () => {
+    const hints = computePortDirectionHints(INSTANCE, lookup);
+    expect(hints).toEqual([
+      { line: 1, char: 17, port: 'clk', direction: 'input', moduleName: 'riscv' },
+      { line: 2, char: 17, port: 'rst_n', direction: 'input', moduleName: 'riscv' },
+      { line: 3, char: 13, port: 'led', direction: 'output', moduleName: 'riscv' },
+    ]);
+  });
+
+  it('模块查不到 → 无提示', () => {
+    expect(computePortDirectionHints(INSTANCE, () => undefined)).toEqual([]);
+  });
+
+  it('连接的端口在模块里不存在 → 跳过该端口', () => {
+    const src = 'riscv u1 (.clk(c), .not_exist(x));';
+    const hints = computePortDirectionHints(src, lookup);
+    expect(hints).toHaveLength(1);
+    expect(hints[0].port).toBe('clk');
+  });
+});

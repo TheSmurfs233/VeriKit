@@ -5,6 +5,8 @@ import { countLines, lintFileRaw } from './core/lint/raw';
 import { ToolchainService, type ToolchainSnapshot } from './vscode/toolchainService';
 import { BlockPairHighlight } from './vscode/blockPairHighlight';
 import { registerLiteralHover } from './vscode/literalHover';
+import { ModuleIndex } from './vscode/moduleIndex';
+import { registerPortDirectionInlay } from './vscode/inlayHints';
 
 /**
  * 扩展入口：只做装配（创建通道 / 注册命令 / 推入 subscriptions），不含业务逻辑。
@@ -94,11 +96,14 @@ export function activate(context: vscode.ExtensionContext): void {
   const service = new ToolchainService(out);
   const pairHighlight = new BlockPairHighlight();
   registerLiteralHover(context);
+  const moduleIndex = new ModuleIndex();
+  registerPortDirectionInlay(context, moduleIndex);
 
   context.subscriptions.push(
     out,
     service,
     pairHighlight,
+    moduleIndex,
 
     vscode.commands.registerCommand('verikit.showDiagnostics', () => {
       out.show(true);
