@@ -129,6 +129,14 @@ export class ToolchainService implements vscode.Disposable {
         `[probe] version: ${version.version ?? '未知'}  (${version.elapsedMs} ms)` +
           (version.error ? `  error=${version.error}` : '')
       );
+      // 拿不到版本时把原始输出打出来 —— 否则只能靠外部脚本复现（S1 踩过一次：53 ms 就失败，日志里什么都没有）
+      if (!version.version && version.raw) {
+        this.out.appendLine(
+          `[probe]   raw code=${version.raw.code ?? 'null'} timedOut=${version.raw.timedOut}`
+        );
+        this.out.appendLine(`[probe]   stdout=${JSON.stringify(version.raw.stdout.slice(0, 300))}`);
+        this.out.appendLine(`[probe]   stderr=${JSON.stringify(version.raw.stderr.slice(0, 300))}`);
+      }
     }
 
     for (const a of presence.attempts) {

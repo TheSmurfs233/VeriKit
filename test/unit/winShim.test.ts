@@ -25,28 +25,33 @@ describe('buildSpawnPlan', () => {
     expect(plan.args).toEqual(['-version']);
   });
 
-  it('.bat 走 cmd /d /s /c，且整行被引号包住', () => {
+  it('.bat 走 cmd /d /s /c call，路径与参数各自成为独立 argv', () => {
     const plan = buildSpawnPlan('C:/x/xvlog.bat', ['-version'], 'win32', COMSPEC);
     expect(plan.file).toBe(COMSPEC);
-    expect(plan.args.slice(0, 3)).toEqual(['/d', '/s', '/c']);
-    const line = plan.args[3];
-    expect(line.startsWith('"')).toBe(true);
-    expect(line.endsWith('"')).toBe(true);
-    expect(line).toContain('xvlog.bat');
-    expect(line).toContain('-version');
+    expect(plan.args).toEqual(['/d', '/s', '/c', 'call', 'C:/x/xvlog.bat', '-version']);
   });
 
-  it('路径含空格时，路径部分被单独加引号', () => {
+  it('不自己拼接整条命令行（避免被 Node 的 argv 转义破坏）', () => {
+    const plan = buildSpawnPlan('C:/x/xvlog.bat', ['-version'], 'win32', COMSPEC);
+    // 任何一项都不应该带外层引号，也不应该含反斜杠转义
+    for (const a of plan.args) {
+      expect(a).not.toContain('\\"');
+    }
+    expect(plan.args).toHaveLength(6);
+  });
+
+  it('含空格的路径原样作为一个 argv 传递给 Node 去加引号', () => {
     const plan = buildSpawnPlan(
       'C:/Program Files/Xilinx/bin/xvlog.bat',
       ['-version'],
       'win32',
       COMSPEC
     );
-    expect(plan.args[3]).toBe('""C:/Program Files/Xilinx/bin/xvlog.bat" -version"');
+    expect(plan.args).toContain('C:/Program Files/Xilinx/bin/xvlog.bat');
   });
 
-  it('路径含双引号时拒绝传参（Windows 路径不可能有双引号）', () => {
-    expect(() => buildSpawnPlan('C:/x/a"b.bat', [], 'win32', COMSPEC)).toThrow(/非法字符/);
+  it('含 cmd 元字符时拒绝传参', () => {
+    expect(() => buildSpawnPlan('C:/x/a"b.bat', [], 'win32', COMSPEC)).toThrow(/无法安全转义/);
+    expect(() => buildSpawnPlan('C:/x/a.bat', ['a&b'], 'win32', COMSPEC)).toThrow(/无法安全转义/);
   });
 });

@@ -1,9 +1,15 @@
 /**
- * Windows 上的 `.bat` / `.cmd` 不能直接 spawn（libuv 不会自动补后缀，也没有可执行头），
- * 必须经 cmd.exe 转发。这里把它做成**纯函数**，好在 vitest 里覆盖各种引号组合。
+ * Windows 上的 `.bat` / `.cmd` 不能直接 spawn：
+ *   - libuv 不会自动补后缀
+ *   - 直接 spawn 会抛 EINVAL（实测，见 test/unit/winShim.spawn.test.ts）
+ *   - `shell: true` 会把参数拼成字符串，路径里的空格/`&` 立刻出问题
  *
- * 关键规则（cmd 的 /s /c 语义）：整条命令行用一对引号包住时，cmd 会剥掉最外层引号，
- * 再按剩余内容执行。所以路径带空格时必须是 `"\"C:\a b\x.bat\" -version"`。
+ * 正确的形态是让 **`call` 当 cmd 的命令**，其余作为它的参数：
+ *   cmd.exe /d /s /c call <bat 路径> <args...>
+ *
+ * ⚠️ 不要自己拼 `"<path> <args>"` 整条命令行 —— 实测会被 Node 的 argv 转义
+ * 破坏成 `\"...\"`，cmd 收到的是一串带反斜杠的字面量，报"不是内部或外部命令"。
+ * 这个坑是 S1 手动验收时踩到的：版本查询 53 ms 就失败，而期望是约 1 s。
  */
 
 export interface SpawnPlan {
@@ -11,20 +17,12 @@ export interface SpawnPlan {
   args: string[];
 }
 
+/** cmd 的元字符：出现在路径或参数里就无法安全传递 */
+const CMD_UNSAFE = /[&|<>^"]/;
+
 /** 需要 cmd.exe 转发的后缀 */
 export function needsCmdShim(target: string, platform: NodeJS.Platform): boolean {
   return platform === 'win32' && /\.(bat|cmd)$/i.test(target);
-}
-
-/**
- * 把单个参数包成 cmd 能正确解析的 token。
- * Windows 路径里不可能出现双引号，所以出现即视为非法输入并直接抛出。
- */
-function quoteForCmd(token: string): string {
-  if (token.includes('"')) {
-    throw new Error(`路径中含非法字符（双引号），无法安全传参：${token}`);
-  }
-  return /[\s&|<>^()]/.test(token) ? `"${token}"` : token;
 }
 
 /** 构造真正要交给 child_process.spawn 的 file/args */
@@ -37,6 +35,12 @@ export function buildSpawnPlan(
   if (!needsCmdShim(target, platform)) {
     return { file: target, args: [...args] };
   }
-  const line = [target, ...args].map(quoteForCmd).join(' ');
-  return { file: comspec, args: ['/d', '/s', '/c', `"${line}"`] };
+
+  for (const token of [target, ...args]) {
+    if (CMD_UNSAFE.test(token)) {
+      throw new Error(`路径或参数含 cmd 无法安全转义的字符：${token}`);
+    }
+  }
+
+  return { file: comspec, args: ['/d', '/s', '/c', 'call', target, ...args] };
 }
