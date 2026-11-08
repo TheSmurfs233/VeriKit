@@ -1,0 +1,167 @@
+#!/usr/bin/env python3
+"""文档一致性静态检查（S0 只查 3 条，宁少勿多）。
+
+检查项：
+  1. 版本号三方一致：package.json 的 version == src/core/version.ts 的 VERSION
+     == docs 中出现的每一处 "vX.Y.Z build N"
+  2. 表格列数一致（报具体文件与行号，能识别转义 \\|）
+  3. @types/vscode 的版本 <= engines.vscode（否则会用到扩展宿主不存在的 API）
+
+退出码：0 = PASS，1 = 有错误。
+"""
+
+from __future__ import annotations
+
+import json
+import re
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+DOCS = ROOT / "docs"
+
+errors: list[str] = []
+notes: list[str] = []
+
+
+def read(rel: str) -> str:
+    return (ROOT / rel).read_text(encoding="utf-8")
+
+
+def parse_min_version(spec: str) -> tuple[int, int, int] | None:
+    """从 '^1.90.0' / '1.90.0' / '>=1.8' 之类的写法里取最低版本号。"""
+    m = re.search(r"(\d+)\.(\d+)(?:\.(\d+))?", spec or "")
+    if not m:
+        return None
+    return (int(m.group(1)), int(m.group(2)), int(m.group(3) or 0))
+
+
+# ---------------------------------------------------------------- 1. 版本号
+
+def check_versions() -> None:
+    pkg = json.loads(read("package.json"))
+    pkg_version = pkg.get("version", "")
+
+    ts = read("src/core/version.ts")
+    m_ver = re.search(r"""VERSION\s*=\s*['"]([^'"]+)['"]""", ts)
+    m_build = re.search(r"BUILD_ID\s*=\s*(\d+)", ts)
+
+    if not m_ver:
+        errors.append("src/core/version.ts: 找不到 VERSION 定义")
+        return
+    if not m_build:
+        errors.append("src/core/version.ts: 找不到 BUILD_ID 定义")
+        return
+
+    ts_version = m_ver.group(1)
+    ts_build = int(m_build.group(1))
+
+    if ts_version != pkg_version:
+        errors.append(
+            f"version.ts 的 VERSION={ts_version} 与 package.json 的 version={pkg_version} 不一致"
+        )
+
+    notes.append(f"版本基线：v{ts_version} build {ts_build}")
+
+    # docs 里所有 "vX.Y.Z build N" 都必须与代码一致
+    pattern = re.compile(r"v(\d+\.\d+\.\d+)\s+build\s+(\d+)")
+    for doc in sorted(DOCS.glob("*.md")):
+        text = doc.read_text(encoding="utf-8")
+        for lineno, line in enumerate(text.splitlines(), 1):
+            for m in pattern.finditer(line):
+                v, b = m.group(1), int(m.group(2))
+                if v != ts_version:
+                    errors.append(
+                        f"docs/{doc.name}:{lineno} 版本号 v{v} != 代码 v{ts_version}"
+                    )
+                if b != ts_build:
+                    errors.append(
+                        f"docs/{doc.name}:{lineno} build {b} != 代码 build {ts_build}"
+                    )
+
+
+# ---------------------------------------------------------------- 2. 表格列数
+
+def table_cells(line: str) -> list[str]:
+    s = line.strip()
+    if s.startswith("|"):
+        s = s[1:]
+    if s.endswith("|"):
+        s = s[:-1]
+    # 负向后顾：不把转义的 \| 当作分隔符
+    return re.split(r"(?<!\\)\|", s)
+
+
+def check_tables() -> None:
+    for doc in sorted(DOCS.glob("*.md")):
+        text = doc.read_text(encoding="utf-8")
+        in_fence = False
+        header_cols: int | None = None
+        for lineno, line in enumerate(text.splitlines(), 1):
+            stripped = line.strip()
+            if stripped.startswith("```"):
+                in_fence = not in_fence
+                header_cols = None
+                continue
+            if in_fence:
+                continue
+            if stripped.startswith("|"):
+                cols = len(table_cells(stripped))
+                if header_cols is None:
+                    header_cols = cols
+                elif cols != header_cols:
+                    errors.append(
+                        f"docs/{doc.name}:{lineno} 表格列数 {cols} != 表头 {header_cols}"
+                    )
+            else:
+                header_cols = None
+
+
+# ------------------------------------------------------- 3. types/vscode 版本
+
+def check_types_vscode() -> None:
+    pkg = json.loads(read("package.json"))
+    engines = pkg.get("engines", {}).get("vscode", "")
+    types = pkg.get("devDependencies", {}).get("@types/vscode", "")
+
+    if not types:
+        errors.append("package.json: 缺少 devDependencies.@types/vscode")
+        return
+
+    e = parse_min_version(engines)
+    t = parse_min_version(types)
+    if e is None or t is None:
+        errors.append(f"无法解析版本：engines.vscode={engines!r} @types/vscode={types!r}")
+        return
+
+    if t > e:
+        errors.append(
+            f"@types/vscode ({types}) 高于 engines.vscode ({engines})，"
+            f"会导致编译通过但扩展宿主不存在该 API"
+        )
+    else:
+        notes.append(f"@types/vscode {types} <= engines.vscode {engines}")
+
+
+# ---------------------------------------------------------------------- main
+
+def main() -> int:
+    check_versions()
+    check_tables()
+    check_types_vscode()
+
+    for n in notes:
+        print(f"  [info] {n}")
+
+    if errors:
+        print(f"\n[doc_check] FAIL: {len(errors)} 个问题")
+        for e in errors:
+            print(f"  - {e}")
+        return 1
+
+    print("[doc_check] PASS")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

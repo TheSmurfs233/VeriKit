@@ -1,0 +1,17 @@
+# 打包时排除的内容（控制 vsix 体积）
+node_modules/**
+src/**
+test/**
+docs/**
+workflow/**
+.vscode/**
+.workbuddy/**
+.gitattributes
+.gitignore
+esbuild.js
+eslint.config.mjs
+vitest.config.mts
+verify.sh
+tsconfig.json
+**/*.map
+dist/*.vsix
