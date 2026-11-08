@@ -1,12 +1,20 @@
-# FPGA Verilog Helper
+# VeriKit — Verilog 编辑助手
 
 VSCode 的 Verilog **代码编写**辅助插件。轻量、跨平台（先只实测 Windows）、仅自用。
 
 **不做**综合、仿真运行、工程生成。
 
+| 项 | 值 |
+|---|---|
+| 扩展 ID | `qaq7321.verikit` |
+| 最低 VSCode | **1.143.0**（`engines.vscode`） |
+| 输出通道 | `VeriKit` |
+| 命令前缀 | `verikit.` |
+| 配置键前缀 | `verikit.` |
+
 ## 当前状态
 
-S0（工程骨架与门禁）进行中：插件可激活、可打包，**没有任何功能**。
+S0（工程骨架与门禁）已完成：插件可激活、可打包，**没有任何功能**。
 
 功能从 S2 开始（高亮与代码片段），核心自研部分是 S3a 的模块头解析。
 
@@ -52,7 +60,7 @@ npm : 无法加载文件 C:\Program Files\nodejs\npm.ps1，因为在此系统上
 不经过 npm，所以 F5 不会触发上面的报错。
 
 > 日常使用（不是开发）不需要 F5：`npm run package` 后
-> `code --install-extension dist/fpga-verilog-helper.vsix` 装一次即可。
+> `code --install-extension dist/verikit.vsix` 装一次即可。
 > 注意这条命令在 PowerShell 里要写成 `npm.cmd run package`。
 
 ## 文档

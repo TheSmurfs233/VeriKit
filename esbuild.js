@@ -15,7 +15,7 @@ const options = {
   format: 'cjs',
   platform: 'node',
   // 对齐 VSCode 扩展宿主内置的 Node 主版本
-  target: 'node20',
+  target: 'node24',
   sourcemap: !production,
   minify: production,
   logLevel: 'info',

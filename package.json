@@ -2,12 +2,12 @@
   "name": "verikit",
   "displayName": "VeriKit — Verilog 编辑助手",
   "description": "Verilog 代码编写辅助：高亮、语法检查、模块索引与一键例化",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "publisher": "qaq7321",
   "private": true,
   "license": "UNLICENSED",
   "engines": {
-    "vscode": "^1.90.0"
+    "vscode": "^1.143.0"
   },
   "categories": [
     "Programming Languages",
@@ -40,8 +40,8 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.12.0",
-    "@types/node": "^20.14.0",
-    "@types/vscode": "1.90.0",
+    "@types/node": "^24.19.0",
+    "@types/vscode": "1.140.0",
     "@vscode/vsce": "^3.1.0",
     "esbuild": "^0.24.0",
     "eslint": "^9.12.0",

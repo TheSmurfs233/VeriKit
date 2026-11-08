@@ -4,9 +4,8 @@
     "lib": ["ES2022"],
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "outDir": "dist",
-    "rootDir": "src",
-    "sourceMap": true,
+    // 只做类型检查，产物由 esbuild 生成；避免误执行 tsc 时在仓库里撒 .js
+    "noEmit": true,
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
@@ -17,6 +16,8 @@
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "dist", "test"]
+  // test 也纳入检查：vitest 是转译执行、不做类型检查，
+  // 若 tsc 不覆盖 test，测试代码里的类型错误只能等运行时才炸。
+  "include": ["src/**/*.ts", "test/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
 }
