@@ -11,6 +11,12 @@
 //  ^^^^^^^^^ storage.modifier.verilog
 //                    ^ constant.numeric.verilog
 
+    input  clk,
+//  ^^^^^ storage.type.port.verilog
+    output reg q
+//  ^^^^^^ storage.type.port.verilog
+//         ^^^ storage.type.verilog
+
     assign y = 8'hFF;
 //  ^^^^^^ keyword.control.verilog
 //             ^^^^^ constant.numeric.verilog

@@ -12,6 +12,7 @@
     { "include": "#edge" },
     { "include": "#control" },
     { "include": "#block" },
+    { "include": "#port-direction" },
     { "include": "#storage" },
     { "include": "#modifier" },
     { "include": "#number" },
@@ -88,9 +89,14 @@
       "name": "keyword.other.block.verilog",
       "match": "\\b(?:begin|end)\\b"
     },
+    "port-direction": {
+      "comment": "端口方向单独成类：用户要求 input/output/inout 用青色（参考 TerosHDL）",
+      "name": "storage.type.port.verilog",
+      "match": "\\b(?:input|output|inout)\\b"
+    },
     "storage": {
       "name": "storage.type.verilog",
-      "match": "\\b(?:input|output|inout|reg|wire|logic|bit|byte|int|integer|real|realtime|time|shortint|longint|tri|tri0|tri1|wand|wor|trior|supply0|supply1)\\b"
+      "match": "\\b(?:reg|wire|logic|bit|byte|int|integer|real|realtime|time|shortint|longint|tri|tri0|tri1|wand|wor|trior|supply0|supply1)\\b"
     },
     "modifier": {
       "name": "storage.modifier.verilog",
