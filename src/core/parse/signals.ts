@@ -120,6 +120,8 @@ export function parseSignalDeclarations(text: string): SignalInfo[] {
         name: p.name,
         kind: 'port',
         direction: p.direction,
+        range: p.range,
+        typeWord: p.typeWord,
         module: h.name,
         line: p.line,
         text: (lines[p.line] ?? '').trim(),
@@ -170,6 +172,7 @@ export function parseSignalDeclarations(text: string): SignalInfo[] {
     const head = m[1];
     const rest = m[2].replace(/[;\s]+$/, '').replace(/\)+$/, '').trim();
 
+    const typeInRest = (/\b(reg|wire|logic|integer|bit|byte|int|shortint|longint|real|time|tri\d?|wand|wor|supply0|supply1)\b/.exec(rest) ?? [])[0];
     const rangeMatch = /\[[^\]]*\]/.exec(rest);
     const range = rangeMatch ? rangeMatch[0] : undefined;
     let namesPart = rest.replace(/\[[^\]]*\]/g, ' ');
@@ -223,7 +226,7 @@ export function parseSignalDeclarations(text: string): SignalInfo[] {
         kind,
         direction,
         range,
-        typeWord: kind === 'port' ? undefined : head,
+        typeWord: kind === 'port' ? typeInRest : head,
         module: mod,
         line: idx,
         text: line,

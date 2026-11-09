@@ -76,7 +76,7 @@ export class ModuleTreeProvider implements vscode.TreeDataProvider<TreeEntry> {
     } else {
       item.iconPath = new vscode.ThemeIcon('symbol-module');
     }
-    item.contextValue = node.unresolved ? 'unresolved' : 'module';
+    item.contextValue = node.unresolved ? 'unresolved' : node.isRoot ? 'top' : 'module';
     return item;
   }
 
@@ -157,6 +157,21 @@ export function registerModuleTree(
       provider.refresh();
     }),
     vscode.commands.registerCommand('verikit.refreshModuleTree', () => provider.refresh()),
+    vscode.commands.registerCommand('verikit.openInstantiation', async (entry?: unknown) => {
+      if (entry && typeof entry === 'object' && (entry as TreeEntry).kind === 'node') {
+        const nodeEntry = entry as Extract<TreeEntry, { kind: 'node' }>;
+        const instFile = nodeEntry.node.instFile;
+        if (!instFile) {
+          return;
+        }
+        // 例化所在文件 = 父模块的定义文件；行号 = 例化处
+        await vscode.commands.executeCommand(
+          'verikit.openModuleDefinition',
+          vscode.Uri.file(instFile),
+          nodeEntry.node.line
+        );
+      }
+    }),
     vscode.commands.registerCommand(
       'verikit.instantiateModule',
       async (entry?: unknown) => {

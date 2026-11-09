@@ -46,8 +46,8 @@ describe('parseModuleHeaders', () => {
   it('位宽与 reg/wire 不干扰端口名', () => {
     const headers = parseModuleHeaders('module m (output reg [3:0] q, input wire clk);');
     expect(headers[0].ports).toEqual([
-      { name: 'q', direction: 'output', line: 0 },
-      { name: 'clk', direction: 'input', line: 0 },
+      { name: 'q', direction: 'output', line: 0, range: '[3:0]', typeWord: 'reg' },
+      { name: 'clk', direction: 'input', line: 0, typeWord: 'wire' },
     ]);
   });
 
@@ -55,9 +55,12 @@ describe('parseModuleHeaders', () => {
     const headers = parseModuleHeaders(
       'module m #(parameter W = 8, parameter N = 2) (input [W-1:0] a, output [W*N-1:0] b);'
     );
-    expect(headers[0].ports).toEqual([
-      { name: 'a', direction: 'input', line: 0 },
-      { name: 'b', direction: 'output', line: 0 },
+    // 字段映射断言（避免显式 undefined 键与 toEqual 的语义纠缠）
+    expect(
+      headers[0].ports.map((p) => ({ name: p.name, direction: p.direction, range: p.range }))
+    ).toEqual([
+      { name: 'a', direction: 'input', range: '[W-1:0]' },
+      { name: 'b', direction: 'output', range: '[W*N-1:0]' },
     ]);
   });
 

@@ -180,6 +180,7 @@ export class ToolchainService implements vscode.Disposable {
     if (p?.found) {
       const v = s.version?.version;
       this.item.text = `$(chip) xvlog${v ? ` ${v}` : ''}`;
+      this.item.command = 'verikit.probeToolchain'; // 已就绪：点击重探
       const md = new vscode.MarkdownString();
       md.appendMarkdown(`**VeriKit · 工具链已就绪**\n\n`);
       md.appendMarkdown(`- 路径：\`${p.exePath}\`\n`);
@@ -194,13 +195,14 @@ export class ToolchainService implements vscode.Disposable {
     }
 
     this.item.text = '$(warning) VeriKit';
+    this.item.command = 'verikit.pickToolchain'; // 未找到：点击直接打开文件选择器
     const md = new vscode.MarkdownString();
     md.appendMarkdown(`**VeriKit · 未找到 xvlog**\n\n已尝试：\n`);
     for (const a of (p?.attempts ?? []).slice(0, 8)) {
       md.appendMarkdown(`- ${a.via}: \`${a.target}\` → ${a.result}\n`);
     }
     md.appendMarkdown(
-      `\n执行 **VeriKit: 选择工具链可执行文件** 手动指定，或配置 \`${this.adapter.configKey}\`。`
+      `\n**点击本状态栏项可直接选择工具链**，或配置 \`${this.adapter.configKey}\`。`
     );
     md.appendMarkdown(
       `\n\n> 若刚修改过环境变量：环境变量在进程启动时继承，请**完全退出并重启 VSCode**（重载窗口不会刷新 PATH）。`

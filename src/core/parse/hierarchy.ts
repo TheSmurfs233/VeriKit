@@ -29,6 +29,10 @@ export interface HierarchyNode {
   moduleName: string;
   /** 例化处行（0 基）；根节点 = 定义行 */
   line: number;
+  /** 例化所在的**文件**（= 父模块的定义文件）；根节点 = 自身定义文件 */
+  instFile?: string;
+  /** 根节点标记 */
+  isRoot?: boolean;
   /** 定义文件（找到定义才有）—— 点击跳转目标 */
   file?: string;
   /** 定义行（0 基） */
@@ -56,7 +60,8 @@ export function buildHierarchy(
     instanceName: string,
     moduleName: string,
     line: number,
-    depth: number
+    depth: number,
+    instFile: string | undefined
   ): HierarchyNode => {
     const node: HierarchyNode = { instanceName, moduleName, line, children: [] };
     const src = lookup(moduleName);
@@ -64,6 +69,7 @@ export function buildHierarchy(
       node.unresolved = true;
       return node;
     }
+    node.instFile = instFile ?? src.file;
     node.file = src.file;
     node.defLine = src.line;
     node.conflicted = src.conflicted;
@@ -76,13 +82,15 @@ export function buildHierarchy(
     }
     path.add(moduleName);
     for (const ch of src.children) {
-      node.children.push(build(ch.instanceName, ch.moduleName, ch.line, depth + 1));
+      node.children.push(build(ch.instanceName, ch.moduleName, ch.line, depth + 1, src.file));
     }
     path.delete(moduleName);
     return node;
   };
 
-  return build(topName, topName, lookup(topName)?.line ?? 0, 1);
+  const root = build(topName, topName, lookup(topName)?.line ?? 0, 1, undefined);
+  root.isRoot = true;
+  return root;
 }
 
 /** 顶层候选：没有被任何模块例化过的模块 */

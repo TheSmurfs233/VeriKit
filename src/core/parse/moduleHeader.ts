@@ -17,6 +17,10 @@ export interface PortInfo {
   direction: PortDirection;
   /** 端口项所在行（0 基）；解析自带行号后始终有值，旧调用方构造的对象可缺省 */
   line?: number;
+  /** 位宽原文（如 [WIDTH-1:0]；无则缺省） */
+  range?: string;
+  /** 类型词（reg/wire/logic…；无则缺省） */
+  typeWord?: string;
 }
 
 export interface HeaderParam {
@@ -225,6 +229,10 @@ function parsePortList(text: string, inner: string, base: number): PortInfo[] {
     if (dir === null) {
       continue; // 还没有任何方向可继承
     }
+    const rangeMatch = /\[[^\]]*\]/.exec(item);
+    const typeInItem = (
+      /\b(reg|wire|logic|integer|bit|byte|int|shortint|longint|real|time|tri\d?|wand|wor|supply0|supply1)\b/.exec(item) ?? []
+    )[0];
     // 去掉位宽 [..] 与类型关键字，剩下的最后一个标识符就是端口名
     const cleaned = item
       .replace(/\[[^\]]*\]/g, ' ')
@@ -236,7 +244,13 @@ function parsePortList(text: string, inner: string, base: number): PortInfo[] {
     }
     // range.start 可能落在上一行尾的换行/空白上，行号要按 trim 后的首字符算
     const lead = range.text.length - range.text.trimStart().length;
-    ports.push({ name, direction: dir, line: lineOf(text, base + range.start + lead) });
+    ports.push({
+      name,
+      direction: dir,
+      line: lineOf(text, base + range.start + lead),
+      range: rangeMatch ? rangeMatch[0] : undefined,
+      typeWord: typeInItem,
+    });
   }
   return ports;
 }
