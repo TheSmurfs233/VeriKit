@@ -41,6 +41,11 @@ export class ModuleTreeProvider implements vscode.TreeDataProvider<TreeEntry> {
   private selectedKey: string | null = null;
   /** 当前聚焦的信号（null = 未聚焦） */
   private focusSignal: string | null = null;
+  /**
+   * 元素缓存：同一节点永远返回同一个包装对象（只更新内容）。
+   * 没有 它，reveal(旧元素) 会因身份不匹配静默失败 —— register_file 不展开的根因。
+   */
+  private entryCache = new Map<string, TreeEntry>();
 
   constructor(private readonly index: ModuleIndex) {
     index.onDidChange(() => this.refresh());
@@ -72,10 +77,24 @@ export class ModuleTreeProvider implements vscode.TreeDataProvider<TreeEntry> {
 
   dispose(): void {
     this.emitter.dispose();
+    this.entryCache.clear();
   }
 
   nodeKey(node: HierarchyNode): string {
     return node.path;   // 层次路径：同模块多例化的唯一身份（修复 id 撞车）
+  }
+
+  /** 取得（或创建）节点的稳定元素：身份恒定，内容随刷新更新 */
+  nodeEntryFor(node: HierarchyNode): TreeEntry {
+    const key = this.nodeKey(node);
+    const cached = this.entryCache.get(key);
+    if (cached && cached.kind === 'node') {
+      cached.node = node;   // 刷新数据，保持对象身份
+      return cached;
+    }
+    const entry: TreeEntry = { kind: 'node', node };
+    this.entryCache.set(key, entry);
+    return entry;
   }
 
   /** 概览文本：根 = 总数；选中的实例 = 总数 + 方向细分与悬空 */
@@ -205,6 +224,37 @@ export class ModuleTreeProvider implements vscode.TreeDataProvider<TreeEntry> {
     return item;
   }
 
+  /**
+   * getParent：reveal 展开祖先链的必需品（没有它，reveal 对不可见元素静默失败）。
+   * 同步实现：元素存在即索引已建，lookup/buildHierarchy 均为同步纯函数。
+   */
+  getParent(element: TreeEntry): TreeEntry | undefined {
+    if (element.kind === 'signalList' || element.kind === 'connection') {
+      return this.nodeEntryFor(element.node);
+    }
+    if (element.kind !== 'node') {
+      return undefined;
+    }
+    const segments = element.node.path.split('/');
+    if (segments.length <= 1) {
+      return undefined; // 根
+    }
+    const top = vscode.workspace.getConfiguration().get<string>(TOP_KEY, '');
+    const root = buildHierarchy(top, (n) => this.index.lookup(n));
+    if (!root) {
+      return undefined;
+    }
+    const parentPath = segments.slice(0, -1).join('/');
+    let cur: HierarchyNode | undefined = root;
+    for (const seg of segments.slice(1, -1)) {
+      cur = cur?.children.find((c) => c.instanceName === seg);
+    }
+    if (!cur || cur.path !== parentPath) {
+      return undefined;
+    }
+    return this.nodeEntryFor(cur);
+  }
+
   async getChildren(element?: TreeEntry): Promise<TreeEntry[]> {
     if (element) {
       if (element.kind === 'signalList') {
@@ -248,10 +298,7 @@ export class ModuleTreeProvider implements vscode.TreeDataProvider<TreeEntry> {
         children.push({ kind: 'signalList' as const, node: element.node });
       }
       children.push(
-        ...element.node.children.map((n) => ({
-          kind: 'node' as const,
-          node: n,
-        }))
+        ...element.node.children.map((n) => this.nodeEntryFor(n))   // 稳定元素
       );
       return children;
     }
@@ -274,7 +321,7 @@ export class ModuleTreeProvider implements vscode.TreeDataProvider<TreeEntry> {
         },
       ];
     }
-    return [{ kind: 'node', node: root }];
+    return [this.nodeEntryFor(root)];   // 稳定元素
   }
 }
 
@@ -348,9 +395,10 @@ export function registerModuleTree(
           provider.toggleSelected(nodeEntry.node);
           provider.refresh();
           // 叶子模块（无子例化）的 TreeItem 初次渲染是 None，折叠状态缓存会吞掉
-          // Expanded 翻转 —— 用 reveal 强制展开（确定性，不依赖缓存行为）
+          // Expanded 翻转 —— 用 reveal 强制展开；元素必须取**缓存后**的稳定身份
+          const target = provider.nodeEntryFor(nodeEntry.node);
           try {
-            await view.reveal(nodeEntry, { expand: 1 });
+            await view.reveal(target, { expand: 1, select: false });
           } catch {
             // 元素不在可视区时 reveal 可能失败，忽略
           }
