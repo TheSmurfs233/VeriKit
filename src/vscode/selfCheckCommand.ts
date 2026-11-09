@@ -49,7 +49,7 @@ export function registerParserSelfCheck(
       } else {
         out.appendLine('[selfcheck] ❌ 该版本与解析器不兼容');
         void vscode.window.showErrorMessage(
-          'VeriKit：解析器自检未通过 —— 请把 Output 面板的 [selfcheck] 段落发给我取证'
+          'VeriKit：解析器自检未通过 —— 请复制 Output 面板的 [selfcheck] 段落用于反馈取证'
         );
       }
     })
