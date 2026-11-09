@@ -75,7 +75,7 @@ export class ModuleTreeProvider implements vscode.TreeDataProvider<TreeEntry> {
   }
 
   nodeKey(node: HierarchyNode): string {
-    return `${node.instFile ?? ''}:${node.line}:${node.instanceName}`;
+    return node.path;   // 层次路径：同模块多例化的唯一身份（修复 id 撞车）
   }
 
   /** 概览文本：根 = 总数；选中的实例 = 总数 + 方向细分与悬空 */
@@ -130,8 +130,13 @@ export class ModuleTreeProvider implements vscode.TreeDataProvider<TreeEntry> {
 
     if (entry.kind === 'connection') {
       const connected = entry.signal !== '';
-      const item = new vscode.TreeItem(
-        connected ? `.${entry.port} → ${entry.signal}` : `.${entry.port} → （悬空）`,
+      const known = entry.node.connections.some((c) => c.port === entry.port);
+      const label = connected
+        ? `.${entry.port} → ${entry.signal}`
+        : known
+          ? `.${entry.port} → （悬空）`
+          : `.${entry.port} → （未连接）`;
+      const item = new vscode.TreeItem(label,
         vscode.TreeItemCollapsibleState.None
       );
       if (connected) {
@@ -203,12 +208,36 @@ export class ModuleTreeProvider implements vscode.TreeDataProvider<TreeEntry> {
   async getChildren(element?: TreeEntry): Promise<TreeEntry[]> {
     if (element) {
       if (element.kind === 'signalList') {
-        return element.node.connections.map((c) => ({
-          kind: 'connection' as const,
-          node: element.node,
-          port: c.port,
-          signal: c.signal,
-        }));
+        // 列出子模块**全端口**（未连接的也显示 ⚠），多余连接附后
+        const childMod = this.index.lookup(element.node.moduleName);
+        const connOf = new Map(element.node.connections.map((c) => [c.port, c.signal]));
+        const rows: TreeEntry[] = [];
+        if (childMod) {
+          for (const p of childMod.ports) {
+            rows.push({
+              kind: 'connection' as const,
+              node: element.node,
+              port: p.name,
+              signal: connOf.get(p.name) ?? '',
+            });
+          }
+          for (const c of element.node.connections) {
+            if (!childMod.ports.some((p) => p.name === c.port)) {
+              rows.push({ kind: 'connection' as const, node: element.node, port: c.port, signal: c.signal });
+            }
+          }
+        } else {
+          // 未定义模块：只显示已解析的命名连接
+          rows.push(
+            ...element.node.connections.map((c) => ({
+              kind: 'connection' as const,
+              node: element.node,
+              port: c.port,
+              signal: c.signal,
+            }))
+          );
+        }
+        return rows;
       }
       if (element.kind !== 'node') {
         return [];

@@ -34,6 +34,8 @@ export interface HierarchyNode {
   instFile?: string;
   /** 该实例的端口连接表（非根节点有；根=自身定义无例化连接） */
   connections: { port: string; signal: string }[];
+  /** 层次路径（如 soc_top/u_cpu/u_alu_pri）—— 同名多例化的唯一身份 */
+  path: string;
   /** 根节点标记 */
   isRoot?: boolean;
   /** 定义文件（找到定义才有）—— 点击跳转目标 */
@@ -57,7 +59,7 @@ export function buildHierarchy(
   if (!lookup(topName)) {
     return null; // 契约：top 未找到返回 null（调用方呈现"重新指定"）
   }
-  const path = new Set<string>();
+  const visited = new Set<string>();
 
   const build = (
     instanceName: string,
@@ -65,9 +67,11 @@ export function buildHierarchy(
     line: number,
     depth: number,
     instFile: string | undefined,
-    connections: { port: string; signal: string }[] = []
+    connections: { port: string; signal: string }[] = [],
+    parentPath = ''
   ): HierarchyNode => {
-    const node: HierarchyNode = { instanceName, moduleName, line, connections, children: [] };
+    const path = parentPath ? `${parentPath}/${instanceName}` : instanceName;
+    const node: HierarchyNode = { instanceName, moduleName, line, connections, children: [], path };
     const src = lookup(moduleName);
     if (!src) {
       node.unresolved = true;
@@ -77,20 +81,20 @@ export function buildHierarchy(
     node.file = src.file;
     node.defLine = src.line;
     node.conflicted = src.conflicted;
-    if (path.has(moduleName)) {
+    if (visited.has(moduleName)) {
       node.cycle = true;
       return node;
     }
     if (depth >= maxDepth) {
       return node;
     }
-    path.add(moduleName);
+    visited.add(moduleName);
     for (const ch of src.children) {
       node.children.push(
-        build(ch.instanceName, ch.moduleName, ch.line, depth + 1, src.file, ch.connections)
+        build(ch.instanceName, ch.moduleName, ch.line, depth + 1, src.file, ch.connections, node.path)
       );
     }
-    path.delete(moduleName);
+    visited.delete(moduleName);
     return node;
   };
 
