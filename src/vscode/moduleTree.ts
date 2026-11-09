@@ -158,11 +158,14 @@ export class ModuleTreeProvider implements vscode.TreeDataProvider<TreeEntry> {
     if (entry.kind === 'connection') {
       const connected = entry.signal !== '';
       const known = entry.node.connections.some((c) => c.port === entry.port);
+      // 方向来自子模块端口表（用户反馈：连接行要能看到 input/output）
+      const childMod = this.index.lookup(entry.node.moduleName);
+      const dir = childMod?.ports.find((p) => p.name === entry.port)?.direction ?? '?';
       const label = connected
-        ? `.${entry.port} → ${entry.signal}`
+        ? `.${entry.port} → ${entry.signal}（${dir}）`
         : known
-          ? `.${entry.port} → （悬空）`
-          : `.${entry.port} → （未连接）`;
+          ? `.${entry.port} → （悬空 · ${dir}）`
+          : `.${entry.port} → （未连接 · ${dir}）`;
       const item = new vscode.TreeItem(label,
         vscode.TreeItemCollapsibleState.None
       );
