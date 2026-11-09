@@ -1,5 +1,7 @@
 # VeriKit — Verilog 编辑助手
 
+![CI](https://github.com/TheSmurfs233/VeriKit/actions/workflows/ci.yml/badge.svg)
+
 VSCode 的 Verilog **代码编写**辅助插件：语法高亮、代码补全、悬停、模块树、保存即出红线。轻量（构建产物 < 40 KB，零运行时依赖），**实测 Windows**，个人项目。
 
 **不做**综合、仿真运行、工程生成。
