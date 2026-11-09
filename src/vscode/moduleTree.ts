@@ -84,6 +84,14 @@ export class ModuleTreeProvider implements vscode.TreeDataProvider<TreeEntry> {
     return node.path;   // 层次路径：同模块多例化的唯一身份（修复 id 撞车）
   }
 
+  /** 选中路径是否仍存在于当前层次中 */
+  private pathExists(root: HierarchyNode, path: string): boolean {
+    if (root.path === path) {
+      return true;
+    }
+    return root.children.some((c) => this.pathExists(c, path));
+  }
+
   /** 取得（或创建）节点的稳定元素：身份恒定，内容随刷新更新 */
   nodeEntryFor(node: HierarchyNode): TreeEntry {
     const key = this.nodeKey(node);
@@ -167,7 +175,7 @@ export class ModuleTreeProvider implements vscode.TreeDataProvider<TreeEntry> {
       }
       item.iconPath = new vscode.ThemeIcon(connected ? 'arrow-right' : 'warning');
       item.contextValue = 'connection';
-      item.id = `${this.nodeKey(entry.node)}::${entry.port}`;
+      item.id = `${this.nodeKey(entry.node)}::${entry.port}::${entry.signal}`;
       return item;
     }
 
@@ -320,6 +328,10 @@ export class ModuleTreeProvider implements vscode.TreeDataProvider<TreeEntry> {
           icon: 'warning',
         },
       ];
+    }
+    // 选中节点已不存在（被删/改名）→ 回落到根选中，避免全树概览消失
+    if (this.selectedKey && !this.pathExists(root, this.selectedKey)) {
+      this.selectedKey = null;
     }
     return [this.nodeEntryFor(root)];   // 稳定元素
   }
