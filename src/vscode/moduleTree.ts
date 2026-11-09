@@ -15,12 +15,14 @@ import { generateInstantiation } from '../core/parse/instantiate';
  * Top 指定：自动检测候选（未被例化者）+ QuickPick，也可手动输入；
  * 选择记入工作区设置（verikit.tree.topModule），跨会话保留。
  *
- * 信号聚焦（v0.13）：
- *   - 例化节点悬停出现行内按钮「信号」→ 展开该实例的连接表（悬空标 ⚠）
- *   - 点击某条连接（信号）→ 进入聚焦模式：其他例化节点的 description 出现
- *     `→ 端口名（方向）` 箭头，扫一眼即知该信号流向哪些模块
- *   - 再点同一信号 / QuickPick 里选"取消聚焦" → 恢复
- *   - 命令面板「聚焦信号」→ QuickPick 模糊搜索全工程信号（跨层次快速定位）
+ * 信号聚焦（v0.13，交互按用户设计迭代）：
+ *   - 例化节点悬停出现行内按钮「信号」→ 单选展开该实例的连接表（悬空标 ⚠）
+ *   - **概览（端口/参数/例化）只显示在"选中的模块"上**：默认选根，
+ *     点某模块的「信号」按钮 = 选中它（概览跟随移动，根不再常驻）
+ *   - 点击某条连接（信号）→ 聚焦模式：其他例化节点的 description 出现
+ *     `→ 端口名（方向）` 箭头；同信号再点 = 取消
+ *   - 命令面板「聚焦信号」→ QuickPick 模糊搜索全工程信号
+ *   - 展开用 view.reveal 强制（叶子模块首次点击即展开，不依赖折叠状态缓存）
  */
 
 const TOP_KEY = 'verikit.tree.topModule';
@@ -35,8 +37,8 @@ export class ModuleTreeProvider implements vscode.TreeDataProvider<TreeEntry> {
   private readonly emitter = new vscode.EventEmitter<TreeEntry | undefined | void>();
   readonly onDidChangeTreeData = this.emitter.event;
 
-  /** 展开了"信号"列表的节点（key = nodeKey） */
-  private expandedSignals = new Set<string>();
+  /** 当前选中的节点 key（null = 根节点选中，根显示概览） */
+  private selectedKey: string | null = null;
   /** 当前聚焦的信号（null = 未聚焦） */
   private focusSignal: string | null = null;
 
@@ -57,6 +59,17 @@ export class ModuleTreeProvider implements vscode.TreeDataProvider<TreeEntry> {
     return this.focusSignal;
   }
 
+  isSelected(node: HierarchyNode): boolean {
+    return this.selectedKey === this.nodeKey(node);
+  }
+
+  /** 单选：点击某模块的「信号」按钮 = 选中它（再点取消，回到根选中） */
+  toggleSelected(node: HierarchyNode): void {
+    const key = this.nodeKey(node);
+    this.selectedKey = this.selectedKey === key ? null : key;
+    this.refresh();
+  }
+
   dispose(): void {
     this.emitter.dispose();
   }
@@ -65,11 +78,42 @@ export class ModuleTreeProvider implements vscode.TreeDataProvider<TreeEntry> {
     return `${node.instFile ?? ''}:${node.line}:${node.instanceName}`;
   }
 
+  /** 概览文本：根 = 总数；选中的实例 = 总数 + 方向细分与悬空 */
+  private overviewFor(node: HierarchyNode): string {
+    const m = this.index.lookup(node.moduleName);
+    if (!m) {
+      return '';
+    }
+    if (node.isRoot) {
+      return `端口 ${m.ports.length} · 参数 ${m.params.length} · 例化 ${m.children.length}`;
+    }
+    const connOf = new Map(node.connections.map((c) => [c.port, c.signal]));
+    let inC = 0;
+    let outC = 0;
+    let inoutC = 0;
+    let floating = 0;
+    for (const p of m.ports) {
+      const sig = connOf.get(p.name);
+      if (sig === undefined || sig === '') {
+        floating += 1;
+      } else if (p.direction === 'output') {
+        outC += 1;
+      } else if (p.direction === 'inout') {
+        inoutC += 1;
+      } else {
+        inC += 1;
+      }
+    }
+    const dir = `输入 ${inC} · 输出 ${outC}${inoutC > 0 ? ` · 双向 ${inoutC}` : ''} · 悬空 ${floating}`;
+    return `端口 ${m.ports.length}（${dir}）· 参数 ${m.params.length} · 例化 ${m.children.length}`;
+  }
+
   getTreeItem(entry: TreeEntry): vscode.TreeItem {
     if (entry.kind === 'action') {
       const item = new vscode.TreeItem(entry.label, vscode.TreeItemCollapsibleState.None);
       item.command = { command: entry.command, title: entry.label };
       item.iconPath = new vscode.ThemeIcon(entry.icon ?? 'arrow-right');
+      item.id = `action:${entry.label}`;
       return item;
     }
 
@@ -80,6 +124,7 @@ export class ModuleTreeProvider implements vscode.TreeDataProvider<TreeEntry> {
       );
       item.iconPath = new vscode.ThemeIcon('symbol-variable');
       item.contextValue = 'signalList';
+      item.id = `${this.nodeKey(entry.node)}::signals`;
       return item;
     }
 
@@ -98,20 +143,23 @@ export class ModuleTreeProvider implements vscode.TreeDataProvider<TreeEntry> {
       }
       item.iconPath = new vscode.ThemeIcon(connected ? 'arrow-right' : 'warning');
       item.contextValue = 'connection';
+      item.id = `${this.nodeKey(entry.node)}::${entry.port}`;
       return item;
     }
 
     const node = entry.node;
+    const key = this.nodeKey(node);
     const label =
       node.instanceName === node.moduleName
         ? node.moduleName
         : `${node.instanceName} : ${node.moduleName}`;
     const item = new vscode.TreeItem(
       label,
-      node.children.length > 0 || this.expandedSignals.has(this.nodeKey(node))
+      node.children.length > 0 || this.isSelected(node)
         ? vscode.TreeItemCollapsibleState.Expanded
         : vscode.TreeItemCollapsibleState.None
     );
+    item.id = `node:${key}`;
     if (node.file !== undefined && node.defLine !== undefined) {
       item.command = {
         command: 'verikit.openModuleDefinition',
@@ -131,57 +179,21 @@ export class ModuleTreeProvider implements vscode.TreeDataProvider<TreeEntry> {
     } else if (this.focusSignal && node.isRoot) {
       item.description = `聚焦: ${this.focusSignal}`;
       item.iconPath = new vscode.ThemeIcon('target');
-    } else if (this.focusSignal && node.connections) {
-      // 聚焦模式：受影响的例化节点显示箭头
+    } else if (this.focusSignal && node.connections.some((c) => c.signal === this.focusSignal)) {
+      // 聚焦模式：受影响的例化节点显示箭头（优先于概览）
       const childMod = this.index.lookup(node.moduleName);
       const dirOf = new Map((childMod?.ports ?? []).map((p) => [p.name, p.direction]));
-      const hits = node.connections.filter((c) => c.signal === this.focusSignal);
-      if (hits.length > 0) {
-        item.description = hits
-          .map((c) => `→ ${c.port}（${dirOf.get(c.port) ?? '?'}）`)
-          .join(' ');
-        item.iconPath = new vscode.ThemeIcon('arrow-right');
-      } else {
-        item.iconPath = new vscode.ThemeIcon('symbol-module');
-      }
-    } else if (!node.isRoot && node.connections && this.expandedSignals.has(this.nodeKey(node))) {
-      // 端口统计只在**展开了信号列表的节点**上显示（用户反馈：全树都显示太吵）
-      const childMod = this.index.lookup(node.moduleName);
-      if (childMod && node.connections.length > 0) {
-        const connOf = new Map(node.connections.map((c) => [c.port, c.signal]));
-        let inC = 0;
-        let outC = 0;
-        let inoutC = 0;
-        let floating = 0;
-        for (const p of childMod.ports) {
-          const sig = connOf.get(p.name);
-          if (sig === undefined || sig === '') {
-            floating += 1;
-          } else if (p.direction === 'output') {
-            outC += 1;
-          } else if (p.direction === 'inout') {
-            inoutC += 1;
-          } else {
-            inC += 1;
-          }
-        }
-        const parts = [`输入 ${inC}`, `输出 ${outC}`];
-        if (inoutC > 0) {
-          parts.push(`双向 ${inoutC}`);
-        }
-        parts.push(`悬空 ${floating}`);
-        item.description = parts.join(' · ');
-      }
-      item.iconPath = new vscode.ThemeIcon('symbol-module');
-    } else if (node.isRoot) {
-      // 概览只挂在**根节点**上（用户反馈：所有实例节点都显示概览太吵）
-      const m = this.index.lookup(node.moduleName);
-      if (m) {
-        item.description = `端口 ${m.ports.length} · 参数 ${m.params.length} · 例化 ${m.children.length}`;
-      }
+      item.description = node.connections
+        .filter((c) => c.signal === this.focusSignal)
+        .map((c) => `→ ${c.port}（${dirOf.get(c.port) ?? '?'}）`)
+        .join(' ');
+      item.iconPath = new vscode.ThemeIcon('arrow-right');
+    } else if (this.isSelected(node)) {
+      // 概览只显示在**选中的模块**上（默认选根）
+      item.description = this.overviewFor(node);
       item.iconPath = new vscode.ThemeIcon('symbol-module');
     } else {
-      // 非根、未展开信号的实例节点：不带任何 description（保持干净）
+      // 未选中的实例节点：不带任何 description（保持干净）
       item.iconPath = new vscode.ThemeIcon('symbol-module');
     }
     item.contextValue = node.unresolved ? 'unresolved' : node.isRoot ? 'top' : 'module';
@@ -202,8 +214,8 @@ export class ModuleTreeProvider implements vscode.TreeDataProvider<TreeEntry> {
         return [];
       }
       const children: TreeEntry[] = [];
-      // 信号列表放**正下方**（子例化之前）—— 用户反馈：追加到末尾位置不对
-      if (this.expandedSignals.has(this.nodeKey(element.node))) {
+      // 信号列表放**正下方**（子例化之前）—— 仅选中的节点展开它
+      if (this.isSelected(element.node)) {
         children.push({ kind: 'signalList' as const, node: element.node });
       }
       children.push(
@@ -304,13 +316,15 @@ export function registerModuleTree(
       async (entry?: unknown) => {
         if (entry && typeof entry === 'object' && (entry as TreeEntry).kind === 'node') {
           const nodeEntry = entry as Extract<TreeEntry, { kind: 'node' }>;
-          const key = provider.nodeKey(nodeEntry.node);
-          if (provider['expandedSignals'].has(key)) {
-            provider['expandedSignals'].delete(key);
-          } else {
-            provider['expandedSignals'].add(key);
-          }
+          provider.toggleSelected(nodeEntry.node);
           provider.refresh();
+          // 叶子模块（无子例化）的 TreeItem 初次渲染是 None，折叠状态缓存会吞掉
+          // Expanded 翻转 —— 用 reveal 强制展开（确定性，不依赖缓存行为）
+          try {
+            await view.reveal(nodeEntry, { expand: 1 });
+          } catch {
+            // 元素不在可视区时 reveal 可能失败，忽略
+          }
         }
       }
     ),
