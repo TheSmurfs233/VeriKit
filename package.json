@@ -2,7 +2,7 @@
   "name": "verikit",
   "displayName": "VeriKit — Verilog 编辑助手",
   "description": "Verilog 代码编写辅助：高亮、语法检查、模块索引与一键例化",
-  "version": "0.11.1",
+  "version": "0.11.2",
   "publisher": "qaq7321",
   "private": true,
   "license": "UNLICENSED",
@@ -78,39 +78,51 @@
         "category": "VeriKit"
       }
     ],
-    "configuration": {
-      "title": "VeriKit",
-      "properties": {
-        "verikit.tree.topModule": {
-          "type": "string",
-          "default": "",
-          "markdownDescription": "模块树显示的顶层模块名（空 = 未指定，会提示选择）"
-        },
-        "verikit.check.timeout": {
-          "type": "number",
-          "default": 15000,
-          "description": "单文件语法检查超时（毫秒）"
-        },
-        "verikit.check.onEdit": {
-          "type": "boolean",
-          "default": false,
-          "markdownDescription": "**编辑时检查**（不保存也出红线）。开启后：停止输入 1 秒即把缓冲区内容写入临时副本交给 xvlog。代价：每次检查约 1 秒 CPU。保存时仍会以磁盘版本做最终确认。"
-        },
-        "verikit.xvlog.path": {
-          "type": "string",
-          "default": "",
-          "markdownDescription": "xvlog.bat 的完整路径（探测**第 1 级**使用，支持 `${env:变量名}` 与 `~`）。**通常留空**：留空时按 PATH → XILINX_VIVADO 环境变量 → 扫描目录级联探测；全部失败再用「VeriKit: 选择工具链」命令指定（会写入本项并立即重新探测）。"
-        },
-        "verikit.probe.scanDirs": {
-          "type": "array",
-          "items": {
-            "type": "string"
+    "configuration": [
+      {
+        "title": "VeriKit 工具链",
+        "properties": {
+          "verikit.xvlog.path": {
+            "type": "string",
+            "default": "",
+            "markdownDescription": "xvlog.bat 的完整路径（探测**第 1 级**使用，支持 `${env:变量名}` 与 `~`）。**通常留空**：留空时按 PATH → XILINX_VIVADO 环境变量 → 扫描目录级联探测；全部失败再用「VeriKit: 选择工具链」命令指定（会写入本项并立即重新探测）。"
           },
-          "default": [],
-          "markdownDescription": "探测**第 4 级**的额外扫描目录列表（每项一个目录，会在其中查找 xvlog.bat）。用于多版本 Vivado 共存或非标准安装位置。留空则只按前三级探测。"
+          "verikit.probe.scanDirs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [],
+            "markdownDescription": "探测**第 4 级**的额外扫描目录列表（每项一个目录，会在其中查找 xvlog.bat）。用于多版本 Vivado 共存或非标准安装位置。留空则只按前三级探测。"
+          }
+        }
+      },
+      {
+        "title": "VeriKit 语法检查",
+        "properties": {
+          "verikit.check.onEdit": {
+            "type": "boolean",
+            "default": false,
+            "markdownDescription": "**编辑时检查**（不保存也出红线）。开启后：停止输入 1 秒即把缓冲区内容写入临时副本交给 xvlog。代价：每次检查约 1 秒 CPU。保存时仍会以磁盘版本做最终确认。"
+          },
+          "verikit.check.timeout": {
+            "type": "number",
+            "default": 15000,
+            "description": "单文件语法检查超时（毫秒）"
+          }
+        }
+      },
+      {
+        "title": "VeriKit 模块树",
+        "properties": {
+          "verikit.tree.topModule": {
+            "type": "string",
+            "default": "",
+            "markdownDescription": "模块树显示的顶层模块名（空 = 未指定，会提示选择）"
+          }
         }
       }
-    },
+    ],
     "languages": [
       {
         "id": "verilog",
