@@ -8,10 +8,10 @@
  */
 
 /** 语义化版本，必须与 package.json 的 version 完全一致 */
-export const VERSION = '0.13.8';
+export const VERSION = '0.14.0';
 
 /** 单调递增的构建号，每次"可被加载的改动"都要 +1 */
-export const BUILD_ID = 48;
+export const BUILD_ID = 49;
 
 /** 激活时打印到 OutputChannel 的第一行 */
 export function versionBanner(): string {
