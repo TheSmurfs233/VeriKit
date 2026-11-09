@@ -1,17 +1,41 @@
 # VeriKit — Verilog 编辑助手
 
-VSCode 的 Verilog **代码编写**辅助插件：语法高亮、代码补全、悬停、模块树、保存即出红线。轻量（构建产物 < 40 KB，零运行时依赖），**实测 Windows**，自用。
+VSCode 的 Verilog **代码编写**辅助插件：语法高亮、代码补全、悬停、模块树、保存即出红线。轻量（构建产物 < 40 KB，零运行时依赖），**实测 Windows**，个人项目。
 
 **不做**综合、仿真运行、工程生成。
 
 | 项 | 值 |
 |---|---|
 | 扩展 ID | `qaq7321.verikit` |
-| 版本 | v0.9.1（build 31） |
+| 版本 | v0.11.0（build 34） |
 | 最低 VSCode | **1.143.0**（`engines.vscode`） |
 | xvlog 兼容 | 2019.2 ~ 2026.x（**实测 2022.2**；换版本跑一次自检命令即可当场验证） |
 | 输出通道 | `VeriKit` |
 | 命令前缀 | `verikit.` |
+
+## 安装
+
+### 方式一：下载打包好的 VSIX（推荐，无需 Node.js）
+
+1. 打开本仓库的 **[Releases](../../releases)** 页面
+2. 在最新版本的 **Assets** 里下载 `verikit.vsix`
+3. VSCode 扩展面板 → 右上角 `…` → **从 VSIX 安装…** → 选择下载的文件
+4. 重载窗口即可
+
+### 方式二：源码构建（开发者）
+
+```bash
+git clone https://github.com/TheSmurfs233/VeriKit.git
+cd VeriKit && npm install
+bash verify.sh       # 六段门禁全部通过后，产物在 dist/verikit.vsix
+code --install-extension dist/verikit.vsix
+```
+
+### 工具链
+
+`xvlog` 在 PATH 里则免配置；否则命令面板 → `VeriKit: 选择工具链` 指定 `xvlog.bat`
+（写入全局设置 `verikit.xvlog.path`）。探测按四级级联：设置路径 → PATH →
+`XILINX_VIVADO` 环境变量 → 扫描目录。
 
 ## 功能
 
@@ -19,23 +43,25 @@ VSCode 的 Verilog **代码编写**辅助插件：语法高亮、代码补全、
 |---|---|
 | 语法高亮 | 26 条配色规则；`begin/end` 按嵌套层级变色（6 层）；例化模块名/实例名/`.端口名` 分色；参数名黑 |
 | 代码片段 | 15 条（`always` / `if` / `case` / `fsm` / `testbench` / `inst` …） |
-| 语法检查 | 打开/保存触发 `xvlog`，行内红线；每文档 seq 防竞态；**解析自检哨兵**（输出格式变化时告警而非静默丢诊断） |
+| 语法检查 | 打开/保存触发 `xvlog`，行内红线；每文档 seq 防竞态；**解析自检哨兵**（输出格式变化时告警而非静默丢诊断）；可选编辑时检查 |
 | 端口方向 inlay | 例化连接项 `)` 后显示 `input` / `output`（跨文件查方向） |
 | 信号悬停 | 悬停变量/端口/参数 → 方向/类型/位宽/所属模块/声明行 |
 | 数字悬停 | `1'b1`、`16'h22` → 无符号 + 补码有符号十进制（BigInt，任意位宽） |
 | 配对高亮 | 光标在 `begin`/`end` 上 → 只高亮配对的那一对（金色） |
 | 代码补全 | 连接区 `.` → 端口名（带方向）；信号/参数名；模块名（来自工作区索引） |
+| 一键例化 | 模块树右键 / 命令面板 → 按真实端口生成例化文本进剪贴板 |
 | 模块树 | 活动栏 VeriKit 面板；Top 自动检测候选/手动指定；单击节点跳模块定义；成环/冲突/未定义均有降级标记 |
-| 探测与诊断 | 状态栏工具链状态；7 个命令；导出诊断 JSON |
+| 探测与诊断 | 状态栏工具链状态；11 个命令；导出诊断 JSON；解析器自检（版本兼容） |
 
-## 使用
+## 配置
 
-1. **安装**：扩展面板 `…` → 从 VSIX 安装 → 选择 `dist/verikit.vsix`，或
-   `code --install-extension dist/verikit.vsix`
-2. **工具链**：`xvlog` 在 PATH 里则免配置；否则命令面板 → `VeriKit: 选择工具链` 指定 `xvlog.bat`
-   （写入全局设置 `verikit.xvlog.path`）
-3. **日常**：打开/保存 `.v` → 红线自动出现；活动栏 VeriKit 图标 → 模块树（先指定 Top）；
-   悬停与补全即打即用
+| 配置键 | 默认 | 说明 |
+|---|---|---|
+| `verikit.check.onEdit` | `false` | 编辑时检查（不保存也出红线）；代价：每次约 1 s CPU |
+| `verikit.check.timeout` | `15000` | 单文件检查超时（毫秒） |
+| `verikit.tree.topModule` | 空 | 模块树的顶层模块（工作区级；通常用命令/面板指定） |
+| `verikit.xvlog.path` | 空 | `xvlog.bat` 路径（探测第 1 级；通常留空走级联） |
+| `verikit.probe.scanDirs` | `[]` | 探测第 4 级的额外扫描目录 |
 
 ## 兼容性
 
