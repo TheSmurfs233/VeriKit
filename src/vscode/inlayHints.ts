@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { parseModuleHeaders } from '../core/parse/moduleHeader';
+import { bodyPortsForModule } from '../core/parse/signals';
 import { computePortDirectionHints } from '../core/parse/inlay';
 import type { ModuleIndex } from './moduleIndex';
 
@@ -32,8 +33,9 @@ export class PortDirectionInlayHints implements vscode.InlayHintsProvider {
     const hints = computePortDirectionHints(text, (mod) => {
       if (localNames.has(mod)) {
         // 当前文档里有定义：以当前内容为准（哪怕是没保存的修改）
+        // 头端口表为空（非 ANSI）→ 用体内端口声明补齐
         const h = headers.find((x) => x.name === mod);
-        return h && h.ports.length > 0 ? h.ports : undefined;
+        return h ? (h.ports.length > 0 ? h.ports : bodyPortsForModule(text, mod)) : undefined;
       }
       return this.index.lookup(mod)?.ports;
     });

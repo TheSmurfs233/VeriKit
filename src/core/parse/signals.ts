@@ -11,7 +11,12 @@
  *   - 参数值保留原文（如 2'd0）；换算可复用 literal/convert，此处不做
  */
 
-import { blankComments, parseModuleHeaders } from './moduleHeader';
+import {
+  blankComments,
+  parseModuleHeaders,
+  type PortDirection,
+  type PortInfo,
+} from './moduleHeader';
 
 export interface SignalInfo {
   name: string;
@@ -66,6 +71,32 @@ export function findModuleRanges(
     out.push(cur);
   }
   return out;
+}
+
+/**
+ * 收集**体内**端口声明（非 ANSI 模块的端口来源）：
+ *   `module m (a, b); input wire a; output reg b; ...` 的方向写在模块体里，
+ *   头解析拿不到 —— 用信号声明扫描补齐（只取 kind=port 且有方向的条目，按文件顺序）。
+ *
+ * 返回：模块名 → 端口列表（含行号）。ANSI 模块的体里不应有端口声明；
+ * 若有（病态写法），调用方应优先用头端口表，忽略本结果。
+ */
+export function collectBodyPorts(text: string): Map<string, PortInfo[]> {
+  const out = new Map<string, PortInfo[]>();
+  for (const d of parseSignalDeclarations(text)) {
+    if (d.kind !== 'port' || !d.direction) {
+      continue;
+    }
+    const list = out.get(d.module) ?? [];
+    list.push({ name: d.name, direction: d.direction as PortDirection, line: d.line });
+    out.set(d.module, list);
+  }
+  return out;
+}
+
+/** 单模块便捷版：体内端口（无则空数组） */
+export function bodyPortsForModule(text: string, moduleName: string): PortInfo[] {
+  return collectBodyPorts(text).get(moduleName) ?? [];
 }
 
 export function parseSignalDeclarations(text: string): SignalInfo[] {

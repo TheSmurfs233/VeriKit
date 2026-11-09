@@ -10,6 +10,7 @@
  */
 
 import { parseInstances } from './instance';
+import { collectBodyPorts } from './signals';
 import { findModuleRanges } from './signals';
 import { parseModuleHeaders, type HeaderParam, type PortInfo } from './moduleHeader';
 
@@ -56,8 +57,7 @@ export function rebuildIndex(files: IndexedFile[]): IndexResult {
 
   for (const [file, text] of byFile) {
     // —— 模块定义（端口/参数/行号；同名且**不同文件** → 冲突） ——
-    for (const h of parseModuleHeaders(text)) {
-      const existing = modules.get(h.name);
+    for (const h of parseModuleHeaders(text)) {      const existing = modules.get(h.name);
       if (existing) {
         const list = conflicts.get(h.name) ?? [existing.file];
         if (!list.includes(file)) {
@@ -74,6 +74,15 @@ export function rebuildIndex(files: IndexedFile[]): IndexResult {
         params: h.params,
         children: [],
       });
+    }
+    // —— 体内端口并入：非 ANSI 模块的方向写在模块体里（头解析为空）——
+    // 只补 ports 为空的模块；ANSI 模块以头端口表为准
+    const bodyPorts = collectBodyPorts(text);
+    for (const [name, list] of bodyPorts) {
+      const m = modules.get(name);
+      if (m && m.ports.length === 0 && list.length > 0) {
+        m.ports = list;
+      }
     }
     // —— 例化归属：按模块行范围挂到所属模块（层次图的边） ——
     const ranges = findModuleRanges(text);

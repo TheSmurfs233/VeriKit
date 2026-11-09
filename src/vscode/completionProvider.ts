@@ -8,6 +8,7 @@ import {
   type CompletionCandidate,
 } from '../core/parse/completion';
 import { parseModuleHeaders } from '../core/parse/moduleHeader';
+import { bodyPortsForModule } from '../core/parse/signals';
 import type { ModuleIndex } from './moduleIndex';
 
 /**
@@ -61,7 +62,11 @@ export function registerVerilogCompletion(
             }
             // 当前文档里定义的模块优先（未保存的修改立即生效），其次工作区索引
             const local = parseModuleHeaders(text).find((h) => h.name === inst.moduleName);
-            let ports = local && local.ports.length > 0 ? local.ports : undefined;
+            let ports = local
+              ? local.ports.length > 0
+                ? local.ports
+                : bodyPortsForModule(text, local.name)   // 非 ANSI：体内端口
+              : undefined;
             if (!ports) {
               await index.ensureBuilt();
               ports = index.lookup(inst.moduleName)?.ports;
