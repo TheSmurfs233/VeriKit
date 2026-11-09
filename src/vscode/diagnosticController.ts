@@ -40,6 +40,14 @@ export class DiagnosticController implements vscode.Disposable {
         diags.push(diag);
       }
     }
+    // S4 说明文案：xvlog 首个语法错误后中止解析，不承诺一次性列出全部错误
+    const lastErr = [...diags].reverse().find(
+      (x) => x.severity === vscode.DiagnosticSeverity.Error
+    );
+    if (lastErr) {
+      lastErr.message +=
+        '\n\n[VeriKit] xvlog 在首个语法错误后中止解析：可能还有未显示的错误；修复后保存会自动重查。';
+    }
     this.collection.set(uri, diags);
   }
 

@@ -5,6 +5,7 @@ import {
   type HierarchyNode,
 } from '../core/parse/hierarchy';
 import type { ModuleIndex } from './moduleIndex';
+import { generateInstantiation } from '../core/parse/instantiate';
 
 /**
  * 模块树视图（方案 B：活动栏独立图标）。
@@ -75,6 +76,7 @@ export class ModuleTreeProvider implements vscode.TreeDataProvider<TreeEntry> {
     } else {
       item.iconPath = new vscode.ThemeIcon('symbol-module');
     }
+    item.contextValue = node.unresolved ? 'unresolved' : 'module';
     return item;
   }
 
@@ -155,6 +157,41 @@ export function registerModuleTree(
       provider.refresh();
     }),
     vscode.commands.registerCommand('verikit.refreshModuleTree', () => provider.refresh()),
+    vscode.commands.registerCommand(
+      'verikit.instantiateModule',
+      async (entry?: unknown) => {
+        await index.ensureBuilt();
+        let moduleName: string | undefined;
+        if (entry && typeof entry === 'object' && (entry as TreeEntry).kind === 'node') {
+          const nodeEntry = entry as Extract<TreeEntry, { kind: 'node' }>;
+          moduleName = nodeEntry.node.moduleName;
+        }
+        if (!moduleName) {
+          // 命令面板入口：QuickPick 选模块
+          const picked = await vscode.window.showQuickPick(
+            index.moduleNames().map((n) => ({
+              label: n,
+              description: index.lookup(n)?.file.split(/[\\/]/).pop(),
+            })),
+            { placeHolder: '选择要例化的模块（生成文本复制到剪贴板）' }
+          );
+          moduleName = picked?.label;
+        }
+        if (!moduleName) {
+          return;
+        }
+        const m = index.lookup(moduleName);
+        if (!m) {
+          void vscode.window.showErrorMessage(`VeriKit：模块 ${moduleName} 未找到定义`);
+          return;
+        }
+        const text = generateInstantiation(m.name, m.params, m.ports);
+        await vscode.env.clipboard.writeText(text);
+        void vscode.window.showInformationMessage(
+          `VeriKit：已复制例化代码 —— ${m.name}（参数 ${m.params.length}，端口 ${m.ports.length}），粘贴到目标位置即可`
+        );
+      }
+    ),
     vscode.commands.registerCommand(
       'verikit.openModuleDefinition',
       async (uri: vscode.Uri, line: number) => {

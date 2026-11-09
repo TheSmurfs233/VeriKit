@@ -2,7 +2,7 @@
   "name": "verikit",
   "displayName": "VeriKit — Verilog 编辑助手",
   "description": "Verilog 代码编写辅助：高亮、语法检查、模块索引与一键例化",
-  "version": "0.10.1",
+  "version": "0.11.0",
   "publisher": "qaq7321",
   "private": true,
   "license": "UNLICENSED",
@@ -70,6 +70,11 @@
       {
         "command": "verikit.openModuleDefinition",
         "title": "转到模块定义",
+        "category": "VeriKit"
+      },
+      {
+        "command": "verikit.instantiateModule",
+        "title": "例化模块（复制到剪贴板）",
         "category": "VeriKit"
       }
     ],
@@ -323,6 +328,13 @@
           "command": "verikit.refreshModuleTree",
           "group": "navigation@2",
           "when": "view == verikit.moduleTree"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "verikit.instantiateModule",
+          "when": "view == verikit.moduleTree && viewItem == module",
+          "group": "instantiate@1"
         }
       ]
     }
