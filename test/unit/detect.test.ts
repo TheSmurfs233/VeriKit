@@ -88,6 +88,18 @@ describe('probePresence', () => {
     expect(r.source).toBe('env');
   });
 
+  it('XILINX_VIVADO 直接指向 bin 目录也能命中（用户实测踩过的约定）', async () => {
+    const r = await probePresence(
+      { adapter: xvlogAdapter, configuredPath: '', scanDirs: [] },
+      deps(fakeFs([XVLOG]), {
+        PATH: 'C:/Windows',
+        XILINX_VIVADO: 'C:/Xilinx/Vivado/2022.2/bin',
+      })
+    );
+    expect(r.found).toBe(true);
+    expect(r.source).toBe('env');
+  });
+
   it('scanDirs 作为最后兜底', async () => {
     const r = await probePresence(
       { adapter: xvlogAdapter, configuredPath: '', scanDirs: ['D:/Xilinx/Vivado/2022.2/bin'] },

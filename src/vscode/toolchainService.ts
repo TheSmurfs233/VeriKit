@@ -202,6 +202,9 @@ export class ToolchainService implements vscode.Disposable {
     md.appendMarkdown(
       `\n执行 **VeriKit: 选择工具链可执行文件** 手动指定，或配置 \`${this.adapter.configKey}\`。`
     );
+    md.appendMarkdown(
+      `\n\n> 若刚修改过环境变量：环境变量在进程启动时继承，请**完全退出并重启 VSCode**（重载窗口不会刷新 PATH）。`
+    );
     this.item.tooltip = md;
   }
 

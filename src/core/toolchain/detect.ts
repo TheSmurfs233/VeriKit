@@ -119,12 +119,25 @@ export async function probePresence(
   // ---------- 3. 环境变量推导（Vivado 装了但没进 PATH 的典型情况） ----------
   const vivado = env.XILINX_VIVADO;
   if (vivado) {
-    for (const name of names) {
-      const candidate = path.join(vivado, 'bin', name);
-      if (await deps.isFile(candidate)) {
-        attempts.push({ via: 'XILINX_VIVADO', target: candidate, result: 'ok' });
-        return done(candidate, 'env');
+    // 兼容两种环境变量约定：指向安装根（<var>/bin/xvlog.bat）
+    // 或直接指向 bin 目录（<var>/xvlog.bat）—— 用户实测踩过后者
+    const bases = [path.join(vivado, 'bin'), vivado];
+    let hitTarget: string | undefined;
+    for (const base of bases) {
+      for (const name of names) {
+        const candidate = path.join(base, name);
+        if (await deps.isFile(candidate)) {
+          attempts.push({ via: 'XILINX_VIVADO', target: candidate, result: 'ok' });
+          hitTarget = candidate;
+          break;
+        }
       }
+      if (hitTarget) {
+        break;
+      }
+    }
+    if (hitTarget) {
+      return done(hitTarget, 'env');
     }
     attempts.push({
       via: 'XILINX_VIVADO',
