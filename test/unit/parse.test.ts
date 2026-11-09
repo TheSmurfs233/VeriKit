@@ -161,11 +161,12 @@ describe('computePortDirectionHints', () => {
     expect(computePortDirectionHints(INSTANCE, () => undefined)).toEqual([]);
   });
 
-  it('连接的端口在模块里不存在 → 跳过该端口', () => {
+  it('连接的端口在模块里不存在 → 未知端口提示（不再静默跳过）', () => {
     const src = 'riscv u1 (.clk(c), .not_exist(x));';
     const hints = computePortDirectionHints(src, lookup);
-    expect(hints).toHaveLength(1);
-    expect(hints[0].port).toBe('clk');
+    expect(hints).toHaveLength(2);
+    expect(hints.find((h) => h.port === 'not_exist')?.direction).toBe('未知端口');
+    expect(hints.find((h) => h.port === 'clk')?.direction).toBe('input');
   });
 });
 

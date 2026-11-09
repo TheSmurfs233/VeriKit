@@ -30,6 +30,15 @@ export function computePortDirectionHints(
     for (const conn of inst.connections) {
       const direction = byName.get(conn.port);
       if (!direction) {
+        // 未知端口（连接了模块上不存在的端口，多为笔误）：
+        // 不再静默跳过——给出"未知端口"提示，让这类笔误一眼可见
+        out.push({
+          line: conn.endLine,
+          char: conn.endChar,
+          port: conn.port,
+          direction: '未知端口',
+          moduleName: inst.moduleName,
+        });
         continue;
       }
       out.push({
