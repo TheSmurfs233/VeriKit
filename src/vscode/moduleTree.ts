@@ -173,12 +173,15 @@ export class ModuleTreeProvider implements vscode.TreeDataProvider<TreeEntry> {
         item.description = parts.join(' · ');
       }
       item.iconPath = new vscode.ThemeIcon('symbol-module');
-    } else {
-      // 根节点常规态：模块概览
+    } else if (node.isRoot) {
+      // 概览只挂在**根节点**上（用户反馈：所有实例节点都显示概览太吵）
       const m = this.index.lookup(node.moduleName);
       if (m) {
         item.description = `端口 ${m.ports.length} · 参数 ${m.params.length} · 例化 ${m.children.length}`;
       }
+      item.iconPath = new vscode.ThemeIcon('symbol-module');
+    } else {
+      // 非根、未展开信号的实例节点：不带任何 description（保持干净）
       item.iconPath = new vscode.ThemeIcon('symbol-module');
     }
     item.contextValue = node.unresolved ? 'unresolved' : node.isRoot ? 'top' : 'module';
