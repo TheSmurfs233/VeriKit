@@ -12,6 +12,7 @@ export interface IndexedChild {
   moduleName: string;
   instanceName: string;
   line: number;
+  connections: { port: string; signal: string }[];
 }
 
 /** 查询源：结构上与 vscode 层的 IndexedModule 兼容（不含 vscode 依赖） */
@@ -31,6 +32,8 @@ export interface HierarchyNode {
   line: number;
   /** 例化所在的**文件**（= 父模块的定义文件）；根节点 = 自身定义文件 */
   instFile?: string;
+  /** 该实例的端口连接表（非根节点有；根=自身定义无例化连接） */
+  connections: { port: string; signal: string }[];
   /** 根节点标记 */
   isRoot?: boolean;
   /** 定义文件（找到定义才有）—— 点击跳转目标 */
@@ -61,9 +64,10 @@ export function buildHierarchy(
     moduleName: string,
     line: number,
     depth: number,
-    instFile: string | undefined
+    instFile: string | undefined,
+    connections: { port: string; signal: string }[] = []
   ): HierarchyNode => {
-    const node: HierarchyNode = { instanceName, moduleName, line, children: [] };
+    const node: HierarchyNode = { instanceName, moduleName, line, connections, children: [] };
     const src = lookup(moduleName);
     if (!src) {
       node.unresolved = true;
@@ -82,7 +86,9 @@ export function buildHierarchy(
     }
     path.add(moduleName);
     for (const ch of src.children) {
-      node.children.push(build(ch.instanceName, ch.moduleName, ch.line, depth + 1, src.file));
+      node.children.push(
+        build(ch.instanceName, ch.moduleName, ch.line, depth + 1, src.file, ch.connections)
+      );
     }
     path.delete(moduleName);
     return node;

@@ -14,11 +14,19 @@ import { collectBodyPorts } from './signals';
 import { findModuleRanges } from './signals';
 import { parseModuleHeaders, type HeaderParam, type PortInfo } from './moduleHeader';
 
+export interface IndexedConnection {
+  port: string;
+  /** 连接表达式；空串 = 悬空 */
+  signal: string;
+}
+
 export interface IndexedChild {
   moduleName: string;
   instanceName: string;
   /** 例化处行（0 基） */
   line: number;
+  /** 该实例的端口连接表（悬空检测/信号流的数据源） */
+  connections: IndexedConnection[];
 }
 
 export interface IndexedModuleData {
@@ -101,6 +109,7 @@ export function rebuildIndex(files: IndexedFile[]): IndexResult {
         moduleName: inst.moduleName,
         instanceName: inst.instanceName,
         line: inst.startLine,
+        connections: inst.connections.map((c) => ({ port: c.port, signal: c.signal })),
       });
     }
   }

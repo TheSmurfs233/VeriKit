@@ -20,6 +20,7 @@ function mod(
       instanceName,
       moduleName,
       line: 1,
+      connections: [],
     })),
   };
 }

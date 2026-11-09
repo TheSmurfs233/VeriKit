@@ -14,6 +14,8 @@ import { blankComments, findClose, skipWsComments } from './moduleHeader';
 
 export interface InstanceConnection {
   port: string;
+  /** 括号内的连接表达式（trim 后原样）；空串 = 未连接（悬空） */
+  signal: string;
   /** 连接项 `)` 之后的绝对位置（0 基），换算成行列后是 inlay 插入点 */
   endLine: number;
   endChar: number;
@@ -116,7 +118,9 @@ function parseConnections(
       continue;
     }
     const pos = lineChar(text, close + 1);
-    connections.push({ port: m[1], endLine: pos.line, endChar: pos.char });
+    // 括号内的连接表达式原样保留（拼接 {a,b} 也不拆），trim 后空串 = 悬空
+    const signal = text.slice(absOpen + 1, close).replace(/\s+/g, ' ').trim();
+    connections.push({ port: m[1], signal, endLine: pos.line, endChar: pos.char });
   }
   return connections;
 }

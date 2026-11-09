@@ -114,6 +114,22 @@ describe('parseInstances', () => {
     expect(insts[0].connections.map((c) => c.port)).toEqual(['a', 'sum']);
   });
 
+  it('连接表达式提取：普通/拼接/悬空', () => {
+    const src = [
+      'adder u1 (',
+      '    .a  (a_sig),',
+      '    .b  ({x, y}),',
+      '    .sum  (),',
+      ');',
+    ].join('\n');
+    const conns = parseInstances(src)[0].connections;
+    expect(conns.map((c) => [c.port, c.signal])).toEqual([
+      ['a', 'a_sig'],
+      ['b', '{x, y}'],
+      ['sum', ''],
+    ]);
+  });
+
   it('多个例化', () => {
     const src = 'adder u1 (.a(a));\nadder u2 (.b(b));';
     expect(parseInstances(src).map((i) => i.instanceName)).toEqual(['u1', 'u2']);
