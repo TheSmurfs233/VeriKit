@@ -2,7 +2,7 @@
   "name": "verikit",
   "displayName": "VeriKit — Verilog 编辑助手",
   "description": "Verilog 代码编写辅助：高亮、语法检查、模块索引与一键例化",
-  "version": "0.9.1",
+  "version": "0.10.0",
   "publisher": "qaq7321",
   "private": true,
   "license": "UNLICENSED",
@@ -85,6 +85,11 @@
           "type": "number",
           "default": 15000,
           "description": "单文件语法检查超时（毫秒）"
+        },
+        "verikit.check.onEdit": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "**编辑时检查**（不保存也出红线）。开启后：停止输入 1 秒即把缓冲区内容写入临时副本交给 xvlog。代价：每次检查约 1 秒 CPU。保存时仍会以磁盘版本做最终确认。"
         }
       }
     },
