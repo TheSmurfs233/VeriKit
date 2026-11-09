@@ -144,8 +144,8 @@ export class ModuleTreeProvider implements vscode.TreeDataProvider<TreeEntry> {
       } else {
         item.iconPath = new vscode.ThemeIcon('symbol-module');
       }
-    } else if (!node.isRoot && node.connections) {
-      // 常规态：例化节点的端口统计（含悬空检测）
+    } else if (!node.isRoot && node.connections && this.expandedSignals.has(this.nodeKey(node))) {
+      // 端口统计只在**展开了信号列表的节点**上显示（用户反馈：全树都显示太吵）
       const childMod = this.index.lookup(node.moduleName);
       if (childMod && node.connections.length > 0) {
         const connOf = new Map(node.connections.map((c) => [c.port, c.signal]));
@@ -198,13 +198,17 @@ export class ModuleTreeProvider implements vscode.TreeDataProvider<TreeEntry> {
       if (element.kind !== 'node') {
         return [];
       }
-      const children: TreeEntry[] = element.node.children.map((n) => ({
-        kind: 'node' as const,
-        node: n,
-      }));
+      const children: TreeEntry[] = [];
+      // 信号列表放**正下方**（子例化之前）—— 用户反馈：追加到末尾位置不对
       if (this.expandedSignals.has(this.nodeKey(element.node))) {
         children.push({ kind: 'signalList' as const, node: element.node });
       }
+      children.push(
+        ...element.node.children.map((n) => ({
+          kind: 'node' as const,
+          node: n,
+        }))
+      );
       return children;
     }
 
